@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+
 import { 
   Users, 
   Camera, 
@@ -17,9 +17,7 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar
+  ResponsiveContainer
 } from 'recharts';
 import '../App.css';
 
@@ -34,13 +32,6 @@ const userGrowthData = [
   { name: 'Sun', users: 10000, active: 8000 },
 ];
 
-const photosData = [
-  { time: '08:00', count: 120 },
-  { time: '12:00', count: 450 },
-  { time: '16:00', count: 320 },
-  { time: '20:00', count: 890 },
-  { time: '00:00', count: 210 },
-];
 
 const recentActivity = [
   { id: 1, user: 'Alex', action: 'shared a photo with', target: 'Sarah', time: '2 mins ago', color: '#fbbf24' },

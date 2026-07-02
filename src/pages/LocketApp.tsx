@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Users, User, ArrowUp, Zap, RotateCcw, Plus, Image as ImageIcon } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Users, Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Plus, Image as ImageIcon } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import '../Locket.css';
 
@@ -71,7 +71,7 @@ export default function LocketApp() {
         }
       });
 
-      return () => newSocket.disconnect();
+      return () => { newSocket.disconnect(); };
     }
   }, [userName]);
 
