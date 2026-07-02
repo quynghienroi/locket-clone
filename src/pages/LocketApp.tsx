@@ -14,27 +14,106 @@ interface PhotoData {
 }
 
 export default function LocketApp() {
-  const [userName, setUserName] = useState<string | null>(null);
-  const [inputValue, setInputValue] = useState('');
+  // Auth State
+  const [token, setToken] = useState<string | null>(localStorage.getItem('locket_token'));
+  const [userName, setUserName] = useState<string | null>(localStorage.getItem('locket_username'));
+  const [authStep, setAuthStep] = useState<'EMAIL' | 'OTP' | 'USERNAME'>('EMAIL');
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newUsername, setNewUsername] = useState('');
+  const [loading, setLoading] = useState(false);
   
+  // App State
   const [socket, setSocket] = useState<Socket | null>(null);
   const [feed, setFeed] = useState<PhotoData[]>([]);
   const [friends, setFriends] = useState<string[]>([]);
   const [receivedPhoto, setReceivedPhoto] = useState<PhotoData | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
   
-  // Swipe Container & Camera Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const centerScreenRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Post-Capture State
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
   const [selectedTargets, setSelectedTargets] = useState<string[]>(['ALL']);
 
-  // Scroll to center screen on mount
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+
+  // --- Auth Flow ---
+  const handleRequestOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAuthStep('OTP');
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert("Network error");
+    }
+    setLoading(false);
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setToken(data.token);
+        localStorage.setItem('locket_token', data.token);
+        if (data.isNewUser || !data.username) {
+          setAuthStep('USERNAME');
+        } else {
+          setUserName(data.username);
+          localStorage.setItem('locket_username', data.username);
+        }
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert("Network error");
+    }
+    setLoading(false);
+  };
+
+  const handleSetUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/set-username`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, username: newUsername })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUserName(data.username);
+        localStorage.setItem('locket_username', data.username);
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert("Network error");
+    }
+    setLoading(false);
+  };
+
+  // --- App Logic ---
   useEffect(() => {
     if (userName && centerScreenRef.current) {
       setTimeout(() => {
@@ -43,21 +122,15 @@ export default function LocketApp() {
     }
   }, [userName]);
 
-  // Socket Connection
   useEffect(() => {
-    if (userName) {
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
-      const newSocket = io(BACKEND_URL);
-      setSocket(newSocket);
-
-      newSocket.on('connect', () => {
-        newSocket.emit('join', userName);
+    if (token && userName) {
+      const newSocket = io(BACKEND_URL, {
+        auth: { token }
       });
+      setSocket(newSocket);
 
       newSocket.on('feed_updated', (updatedFeed: PhotoData[]) => {
         setFeed(updatedFeed);
-        
-        // Auto extract friends from feed
         const newFriends = new Set<string>();
         updatedFeed.forEach(p => {
           if (p.sender !== userName) newFriends.add(p.sender);
@@ -71,11 +144,21 @@ export default function LocketApp() {
         }
       });
 
+      newSocket.on('connect_error', (err) => {
+        console.error("Socket error:", err.message);
+        if (err.message === "Authentication error") {
+          // Token expired or invalid
+          setToken(null);
+          setUserName(null);
+          localStorage.removeItem('locket_token');
+          localStorage.removeItem('locket_username');
+        }
+      });
+
       return () => { newSocket.disconnect(); };
     }
-  }, [userName]);
+  }, [token, userName]);
 
-  // Initialize Camera
   useEffect(() => {
     if (!userName) return; 
     let stream: MediaStream | null = null;
@@ -94,13 +177,12 @@ export default function LocketApp() {
     };
     startCamera();
     return () => stream?.getTracks().forEach(track => track.stop());
-  }, [userName, capturedPhoto]); // Restart camera if we cancel post-capture
+  }, [userName, capturedPhoto]);
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
@@ -108,10 +190,8 @@ export default function LocketApp() {
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        setCapturedPhoto(imageDataUrl);
-        setCaption(''); // Reset caption
+        setCapturedPhoto(canvas.toDataURL('image/jpeg', 0.8));
+        setCaption('');
         
         const flash = document.createElement('div');
         flash.className = 'camera-flash';
@@ -124,13 +204,11 @@ export default function LocketApp() {
   const handleSend = () => {
     if (socket && capturedPhoto) {
       socket.emit('send_photo', {
-        sender: userName,
         targets: selectedTargets,
         photoBase64: capturedPhoto,
         caption: caption
       });
       setCapturedPhoto(null);
-      // Auto scroll to Right Screen (Feed) to see the sent photo
       const container = containerRef.current;
       if (container) {
         container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
@@ -143,7 +221,6 @@ export default function LocketApp() {
       setSelectedTargets(['ALL']);
       return;
     }
-    
     let newTargets = selectedTargets.filter(t => t !== 'ALL');
     if (newTargets.includes(target)) {
       newTargets = newTargets.filter(t => t !== target);
@@ -163,35 +240,87 @@ export default function LocketApp() {
   };
 
   const handleAddReaction = (photoId: number, emoji: string) => {
-    if (socket && userName) {
-      socket.emit('add_reaction', { photoId, emoji, user: userName });
+    if (socket) {
+      socket.emit('add_reaction', { photoId, emoji });
     }
   };
 
-  // ---------------- ONBOARDING ----------------
-  if (!userName) {
+  const handleLogout = () => {
+    localStorage.removeItem('locket_token');
+    localStorage.removeItem('locket_username');
+    setToken(null);
+    setUserName(null);
+    setAuthStep('EMAIL');
+  }
+
+  // ---------------- ONBOARDING / AUTH ----------------
+  if (!token || !userName) {
     return (
       <div className="locket-container">
         <div className="mobile-frame">
           <div className="login-overlay">
             <div className="locket-logo-text">LOCKET</div>
-            <p className="login-subtitle">What's your name?</p>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              if (inputValue.trim()) setUserName(inputValue.trim());
-            }} style={{ width: '100%', maxWidth: '300px' }}>
-              <input 
-                type="text" 
-                className="name-input"
-                placeholder="Enter your name" 
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                autoFocus
-              />
-              <button type="submit" className="continue-btn" disabled={!inputValue.trim()}>
-                Continue
-              </button>
-            </form>
+            
+            {authStep === 'EMAIL' && (
+              <>
+                <p className="login-subtitle">Enter your email</p>
+                <form onSubmit={handleRequestOtp} style={{ width: '100%', maxWidth: '300px' }}>
+                  <input 
+                    type="email" 
+                    className="name-input"
+                    placeholder="hello@example.com" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                  <button type="submit" className="continue-btn" disabled={loading || !email}>
+                    {loading ? 'Sending...' : 'Continue'}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {authStep === 'OTP' && (
+              <>
+                <p className="login-subtitle">Enter the code sent to<br/>{email}</p>
+                <form onSubmit={handleVerifyOtp} style={{ width: '100%', maxWidth: '300px' }}>
+                  <input 
+                    type="text" 
+                    className="name-input"
+                    placeholder="6-digit code" 
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    autoFocus
+                    maxLength={6}
+                    required
+                  />
+                  <button type="submit" className="continue-btn" disabled={loading || otp.length < 6}>
+                    {loading ? 'Verifying...' : 'Verify'}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {authStep === 'USERNAME' && (
+              <>
+                <p className="login-subtitle">Pick a username</p>
+                <form onSubmit={handleSetUsername} style={{ width: '100%', maxWidth: '300px' }}>
+                  <input 
+                    type="text" 
+                    className="name-input"
+                    placeholder="e.g. alex123" 
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                  <button type="submit" className="continue-btn" disabled={loading || !newUsername}>
+                    {loading ? 'Saving...' : 'Start using Locket'}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -202,18 +331,15 @@ export default function LocketApp() {
   return (
     <div className="locket-container">
       <div className="mobile-frame">
-        
-        {/* Swipeable Container */}
         <div className="swipe-container" ref={containerRef}>
           
-          {/* LEFT SCREEN: History & Friends */}
+          {/* LEFT SCREEN */}
           <div className="swipe-screen">
             <div className="screen-header">History</div>
             <div className="feed-container">
               {feed.filter(p => p.sender === userName || p.targets.includes(userName) || p.targets.includes('ALL')).length === 0 && (
                 <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No history yet.</p>
               )}
-              {/* Simplified History View - reusing feed items for now */}
               {feed.filter(p => p.sender === userName || p.targets.includes(userName) || p.targets.includes('ALL')).map(photo => (
                 <div key={photo.id} className="feed-item" style={{transform: 'scale(0.95)', opacity: 0.8}}>
                   <div className="feed-image-container">
@@ -224,11 +350,11 @@ export default function LocketApp() {
             </div>
           </div>
 
-          {/* CENTER SCREEN: Camera */}
+          {/* CENTER SCREEN */}
           <div className="swipe-screen" ref={centerScreenRef}>
             <header className="locket-header">
-              <button className="locket-icon-btn" onClick={() => containerRef.current?.scrollTo({left: 0, behavior: 'smooth'})}>
-                <Users size={20} />
+              <button className="locket-icon-btn" onClick={handleLogout} title="Logout">
+                <span style={{fontWeight: 'bold'}}>{userName.charAt(0).toUpperCase()}</span>
               </button>
               
               <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -259,14 +385,13 @@ export default function LocketApp() {
                 <button className="locket-icon-btn" style={{backgroundColor: 'transparent'}}><Zap size={24}/></button>
                 <button className="locket-icon-btn" style={{backgroundColor: 'transparent'}}><RotateCcw size={24}/></button>
               </div>
-              
               <div className="capture-btn-outer" onClick={handleCapture}>
                 <div className="capture-btn-inner"></div>
               </div>
             </footer>
           </div>
 
-          {/* RIGHT SCREEN: World / Feed */}
+          {/* RIGHT SCREEN */}
           <div className="swipe-screen">
             <div className="screen-header">Feed</div>
             <div className="feed-container">
@@ -282,14 +407,12 @@ export default function LocketApp() {
                       <span className="feed-time">Just now</span>
                     </div>
                   </div>
-                  
                   <div className="feed-image-container">
                     <img src={photo.photoBase64} alt="Feed" />
                     {photo.caption && (
                       <div className="feed-caption-overlay">{photo.caption}</div>
                     )}
                   </div>
-                  
                   <div className="feed-reactions">
                     <button className="reaction-btn" onClick={() => handleAddReaction(photo.id, '❤️')}>❤️</button>
                     <button className="reaction-btn" onClick={() => handleAddReaction(photo.id, '😂')}>😂</button>
@@ -305,7 +428,7 @@ export default function LocketApp() {
             </div>
           </div>
 
-        </div> {/* End Swipe Container */}
+        </div>
 
         {/* POST-CAPTURE UI OVERLAY */}
         {capturedPhoto && (
