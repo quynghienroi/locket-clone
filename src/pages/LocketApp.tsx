@@ -4,7 +4,7 @@ import { io, Socket } from 'socket.io-client';
 import '../Locket.css';
 
 interface PhotoData {
-  id: number;
+  id: string;
   sender: string;
   targets: string[];
   photoBase64: string;
@@ -239,7 +239,7 @@ export default function LocketApp() {
     }
   };
 
-  const handleAddReaction = (photoId: number, emoji: string) => {
+  const handleAddReaction = (photoId: string, emoji: string) => {
     if (socket) {
       socket.emit('add_reaction', { photoId, emoji });
     }
