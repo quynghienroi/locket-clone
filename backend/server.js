@@ -9,6 +9,7 @@ require('dotenv').config();
 
 const User = require('./models/User');
 const Photo = require('./models/Photo');
+const Event = require('./models/Event');
 
 const app = express();
 app.use(cors());
@@ -100,11 +101,26 @@ app.post('/api/auth/verify-otp', async (req, res) => {
       success: true, 
       token, 
       isNewUser, 
-      username: user.username 
+      username: user.username,
+      points: user.points
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// API: Get current user info
+app.get('/api/user/me', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ email: decoded.email });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ success: true, points: user.points });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
   }
 });
 
@@ -131,6 +147,63 @@ app.post('/api/auth/set-username', async (req, res) => {
     res.json({ success: true, username: user.username });
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+
+// --- EVENT MANAGEMENT (PHASE 2) ---
+
+// API: Get all upcoming events
+app.get('/api/events', async (req, res) => {
+  try {
+    const events = await Event.find().sort({ date: 1 });
+    res.json({ success: true, events });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch events' });
+  }
+});
+
+// API: Create new event (Admin)
+app.post('/api/events', async (req, res) => {
+  const { title, description, date, pointsReward } = req.body;
+  try {
+    const newEvent = new Event({ title, description, date, pointsReward });
+    await newEvent.save();
+    res.json({ success: true, event: newEvent });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create event' });
+  }
+});
+
+// API: Join an event
+app.post('/api/events/:id/join', async (req, res) => {
+  const { token } = req.body;
+  const eventId = req.params.id;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ email: decoded.email });
+    if (!user || !user.username) return res.status(404).json({ error: 'User not found' });
+
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+
+    // Check if already joined
+    if (event.participants.includes(user.username)) {
+      return res.status(400).json({ error: 'Already joined' });
+    }
+
+    // Add user to event participants
+    event.participants.push(user.username);
+    await event.save();
+
+    // Award points and add event to user's history
+    user.points += (event.pointsReward || 50);
+    user.eventsJoined.push(event._id);
+    await user.save();
+
+    res.json({ success: true, message: 'Joined successfully', points: user.points, event });
+  } catch (err) {
+    res.status(401).json({ error: 'Authentication failed' });
   }
 });
 
@@ -186,6 +259,8 @@ io.on('connection', async (socket) => {
 
         // Award points (+5 for posting photo)
         await User.updateOne({ email: socket.userEmail }, { $inc: { points: 5 } });
+        const updatedUser = await User.findOne({ email: socket.userEmail });
+        socket.emit('points_updated', updatedUser.points);
 
         const newPhoto = {
           id: newPhotoDoc._id.toString(),
@@ -234,6 +309,8 @@ io.on('connection', async (socket) => {
 
           // Award points (+1 for reacting)
           await User.updateOne({ email: socket.userEmail }, { $inc: { points: 1 } });
+          const updatedUser = await User.findOne({ email: socket.userEmail });
+          socket.emit('points_updated', updatedUser.points);
 
           // Broadcast updated feed
           const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);

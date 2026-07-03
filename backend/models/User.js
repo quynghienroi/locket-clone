@@ -14,7 +14,11 @@ const userSchema = new mongoose.Schema({
   points: {
     type: Number,
     default: 0
-  }
+  },
+  eventsJoined: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Event'
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

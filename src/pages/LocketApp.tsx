@@ -12,6 +12,14 @@ interface PhotoData {
   reactions: Record<string, string>;
   timestamp: string;
 }
+interface EventData {
+  _id: string;
+  title: string;
+  description: string;
+  date: string;
+  pointsReward: number;
+  participants: string[];
+}
 
 export default function LocketApp() {
   // Auth State
@@ -29,6 +37,8 @@ export default function LocketApp() {
   const [friends, setFriends] = useState<string[]>([]);
   const [receivedPhoto, setReceivedPhoto] = useState<PhotoData | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [events, setEvents] = useState<EventData[]>([]);
+  const [userPoints, setUserPoints] = useState<number>(0);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const centerScreenRef = useRef<HTMLDivElement>(null);
@@ -115,6 +125,25 @@ export default function LocketApp() {
 
   // --- App Logic ---
   useEffect(() => {
+    const fetchEventsAndPoints = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/events`);
+        const data = await res.json();
+        if (data.success) setEvents(data.events);
+
+        if (token) {
+          const userRes = await fetch(`${BACKEND_URL}/api/user/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const userData = await userRes.json();
+          if (userData.success) setUserPoints(userData.points);
+        }
+      } catch (err) {
+        console.error("Failed to fetch data");
+      }
+    };
+    if (userName) fetchEventsAndPoints();
+    
     if (userName && centerScreenRef.current) {
       setTimeout(() => {
         centerScreenRef.current?.scrollIntoView({ behavior: 'auto', inline: 'center' });
@@ -153,6 +182,10 @@ export default function LocketApp() {
           localStorage.removeItem('locket_token');
           localStorage.removeItem('locket_username');
         }
+      });
+
+      newSocket.on('points_updated', (points: number) => {
+        setUserPoints(points);
       });
 
       return () => { newSocket.disconnect(); };
@@ -252,6 +285,26 @@ export default function LocketApp() {
     setUserName(null);
     setAuthStep('EMAIL');
   }
+
+  const handleJoinEvent = async (eventId: string) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/events/${eventId}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUserPoints(data.points);
+        setEvents(events.map(e => e._id === eventId ? data.event : e));
+        alert(`Successfully joined! You earned ${data.event.pointsReward} points.`);
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert("Error joining event");
+    }
+  };
 
   // ---------------- ONBOARDING / AUTH ----------------
   if (!token || !userName) {
@@ -357,10 +410,13 @@ export default function LocketApp() {
                 <span style={{fontWeight: 'bold'}}>{userName.charAt(0).toUpperCase()}</span>
               </button>
               
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <div className="friend-bubble" title="Add Friend" onClick={handleAddFriend} style={{backgroundColor: '#fbbf24', color: 'black'}}>
-                  <Plus size={16} />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '4px' }}>
+                  <div className="friend-bubble" title="Add Friend" onClick={handleAddFriend} style={{backgroundColor: '#fbbf24', color: 'black'}}>
+                    <Plus size={16} />
+                  </div>
                 </div>
+                <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 'bold' }}>{userPoints} PTS</div>
               </div>
               
               <button className="locket-icon-btn" onClick={() => containerRef.current?.scrollTo({left: 9999, behavior: 'smooth'})}>
@@ -425,6 +481,57 @@ export default function LocketApp() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* SCREEN 4: CLUB EVENTS */}
+          <div className="swipe-screen" style={{ padding: '1rem', overflowY: 'auto' }}>
+            <div className="screen-header">Club Events</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem', paddingBottom: '4rem' }}>
+              {events.length === 0 && (
+                <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No upcoming events.</p>
+              )}
+              {events.map(event => {
+                const isJoined = event.participants.includes(userName || '');
+                return (
+                  <div key={event._id} style={{ background: '#27272a', padding: '1rem', borderRadius: '1rem', border: '1px solid #3f3f46' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>{event.title}</h3>
+                      <span style={{ background: '#fbbf24', color: 'black', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                        +{event.pointsReward} pts
+                      </span>
+                    </div>
+                    <p style={{ color: '#a1a1aa', fontSize: '0.9rem', marginBottom: '12px', lineHeight: 1.4 }}>{event.description}</p>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ color: '#fbbf24', fontSize: '0.8rem' }}>
+                        📅 {new Date(event.date).toLocaleDateString()}
+                      </div>
+                      <div style={{ color: '#666', fontSize: '0.8rem' }}>
+                        👥 {event.participants.length} joining
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => handleJoinEvent(event._id)}
+                      disabled={isJoined}
+                      style={{
+                        width: '100%',
+                        marginTop: '12px',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: isJoined ? '#3f3f46' : '#10b981',
+                        color: isJoined ? '#a1a1aa' : 'white',
+                        fontWeight: 'bold',
+                        cursor: isJoined ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {isJoined ? 'Joined ✓' : 'Join Event'}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
