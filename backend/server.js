@@ -52,13 +52,16 @@ app.post('/api/auth/request-otp', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email is required' });
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
-  otpStore.set(email, { otp, expires: Date.now() + 5 * 60 * 1000 }); // 5 mins
+  let otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
 
   if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
+    otp = '123456'; // Default hardcoded OTP for testing
+    otpStore.set(email, { otp, expires: Date.now() + 5 * 60 * 1000 }); // 5 mins
     console.log(`[DEV MODE] OTP for ${email} is: ${otp}`);
     return res.json({ success: true, message: 'OTP logged to console (Dev Mode)' });
   }
+
+  otpStore.set(email, { otp, expires: Date.now() + 5 * 60 * 1000 }); // 5 mins
 
   try {
     await transporter.sendMail({
