@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Users, Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Plus, Image as ImageIcon } from 'lucide-react';
+import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Plus, Image as ImageIcon } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import '../Locket.css';
 
