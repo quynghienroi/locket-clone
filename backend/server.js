@@ -10,6 +10,7 @@ require('dotenv').config();
 const User = require('./models/User');
 const Photo = require('./models/Photo');
 const Event = require('./models/Event');
+const Repo = require('./models/Repo');
 
 const app = express();
 app.use(cors());
@@ -207,6 +208,59 @@ app.post('/api/events/:id/join', async (req, res) => {
   }
 });
 
+
+// --- GITHUB REPOS (PHASE 3) ---
+
+app.get('/api/repos', async (req, res) => {
+  try {
+    const repos = await Repo.find().sort({ createdAt: -1 });
+    res.json({ success: true, repos });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch repos' });
+  }
+});
+
+app.post('/api/repos', async (req, res) => {
+  const { token, url } = req.body;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ email: decoded.email });
+    if (!user || !user.username) return res.status(404).json({ error: 'User not found' });
+
+    // Parse GitHub URL
+    // e.g. https://github.com/facebook/react
+    const urlParts = url.replace('https://github.com/', '').split('/');
+    if (urlParts.length < 2) return res.status(400).json({ error: 'Invalid GitHub URL' });
+    const owner = urlParts[0];
+    const name = urlParts[1];
+
+    // Fetch from GitHub API
+    const ghRes = await fetch(`https://api.github.com/repos/${owner}/${name}`);
+    if (!ghRes.ok) return res.status(400).json({ error: 'GitHub Repo not found' });
+    const ghData = await ghRes.json();
+
+    const newRepo = new Repo({
+      sender: user.username,
+      url,
+      owner: ghData.owner.login,
+      name: ghData.name,
+      description: ghData.description,
+      language: ghData.language,
+      stars: ghData.stargazers_count,
+      forks: ghData.forks_count
+    });
+    await newRepo.save();
+
+    // Award points (+10 for sharing a repo)
+    user.points += 10;
+    await user.save();
+
+    res.json({ success: true, repo: newRepo, points: user.points });
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({ error: 'Authentication failed' });
+  }
+});
 
 // Socket.io Logic
 io.use((socket, next) => {

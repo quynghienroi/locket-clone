@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Plus, Image as ImageIcon } from 'lucide-react';
+import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Plus, Image as ImageIcon, Code, Star } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import '../Locket.css';
 
@@ -20,6 +20,16 @@ interface EventData {
   pointsReward: number;
   participants: string[];
 }
+interface RepoData {
+  _id: string;
+  sender: string;
+  url: string;
+  owner: string;
+  name: string;
+  description: string;
+  language: string;
+  stars: number;
+}
 
 export default function LocketApp() {
   // Auth State
@@ -38,7 +48,10 @@ export default function LocketApp() {
   const [receivedPhoto, setReceivedPhoto] = useState<PhotoData | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [events, setEvents] = useState<EventData[]>([]);
+  const [repos, setRepos] = useState<RepoData[]>([]);
   const [userPoints, setUserPoints] = useState<number>(0);
+  const [repoUrlInput, setRepoUrlInput] = useState('');
+  const [sharingRepo, setSharingRepo] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const centerScreenRef = useRef<HTMLDivElement>(null);
@@ -130,6 +143,10 @@ export default function LocketApp() {
         const res = await fetch(`${BACKEND_URL}/api/events`);
         const data = await res.json();
         if (data.success) setEvents(data.events);
+
+        const repoRes = await fetch(`${BACKEND_URL}/api/repos`);
+        const repoData = await repoRes.json();
+        if (repoData.success) setRepos(repoData.repos);
 
         if (token) {
           const userRes = await fetch(`${BACKEND_URL}/api/user/me`, {
@@ -304,6 +321,31 @@ export default function LocketApp() {
     } catch (err) {
       alert("Error joining event");
     }
+  };
+
+  const handleShareRepo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!repoUrlInput) return;
+    setSharingRepo(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/repos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, url: repoUrlInput })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRepos([data.repo, ...repos]);
+        setUserPoints(data.points);
+        setRepoUrlInput('');
+        alert(`Repo shared! You earned 10 points.`);
+      } else {
+        alert(data.error || 'Failed to share repo');
+      }
+    } catch (err) {
+      alert("Error sharing repo");
+    }
+    setSharingRepo(false);
   };
 
   // ---------------- ONBOARDING / AUTH ----------------
@@ -532,6 +574,70 @@ export default function LocketApp() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* SCREEN 5: TECH REPOS */}
+          <div className="swipe-screen" style={{ padding: '1rem', overflowY: 'auto' }}>
+            <div className="screen-header">Tech Repos</div>
+            
+            <form onSubmit={handleShareRepo} style={{ display: 'flex', gap: '8px', marginTop: '1rem' }}>
+              <input 
+                type="url" 
+                value={repoUrlInput}
+                onChange={(e) => setRepoUrlInput(e.target.value)}
+                placeholder="https://github.com/..."
+                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white' }}
+                required
+              />
+              <button 
+                type="submit" 
+                disabled={sharingRepo}
+                style={{ padding: '0 16px', borderRadius: '8px', border: 'none', background: '#fbbf24', color: 'black', fontWeight: 'bold', cursor: sharingRepo ? 'not-allowed' : 'pointer' }}
+              >
+                {sharingRepo ? '...' : 'Share'}
+              </button>
+            </form>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem', paddingBottom: '4rem' }}>
+              {repos.length === 0 && (
+                <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No repos shared yet.</p>
+              )}
+              {repos.map(repo => (
+                <div key={repo._id} style={{ background: '#27272a', padding: '1rem', borderRadius: '1rem', border: '1px solid #3f3f46' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#fbbf24', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px' }}>
+                      {repo.sender.charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ color: '#fbbf24', fontSize: '0.8rem', fontWeight: 'bold' }}>{repo.sender} shared:</span>
+                  </div>
+                  
+                  <div style={{ background: '#18181b', padding: '12px', borderRadius: '8px' }}>
+                    <h3 style={{ margin: '0 0 8px 0', color: '#3b82f6', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Code size={16} color="white" />
+                      <a href={repo.url} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'none' }}>
+                        {repo.owner}/{repo.name}
+                      </a>
+                    </h3>
+                    <p style={{ color: '#a1a1aa', fontSize: '0.85rem', margin: '0 0 12px 0', lineHeight: 1.4 }}>
+                      {repo.description || 'No description provided.'}
+                    </p>
+                    
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                      {repo.language && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#fbbf24' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }}></span>
+                          {repo.language}
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#a1a1aa' }}>
+                        <Star size={14} />
+                        {repo.stars}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
