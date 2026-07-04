@@ -52,6 +52,10 @@ export default function LocketApp() {
   const [userPoints, setUserPoints] = useState<number>(0);
   const [repoUrlInput, setRepoUrlInput] = useState('');
   const [sharingRepo, setSharingRepo] = useState(false);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventDesc, setEventDesc] = useState('');
+  const [eventReward, setEventReward] = useState(50);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const centerScreenRef = useRef<HTMLDivElement>(null);
@@ -348,6 +352,29 @@ export default function LocketApp() {
     setSharingRepo(false);
   };
 
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventTitle || !eventDesc) return;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: eventTitle, description: eventDesc, date: new Date().toISOString(), pointsReward: eventReward })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEvents([data.event, ...events]);
+        setShowEventForm(false);
+        setEventTitle('');
+        setEventDesc('');
+      } else {
+        alert('Failed to create event');
+      }
+    } catch (err) {
+      alert("Error creating event");
+    }
+  };
+
   // ---------------- ONBOARDING / AUTH ----------------
   if (!token || !userName) {
     return (
@@ -529,7 +556,28 @@ export default function LocketApp() {
 
           {/* SCREEN 4: CLUB EVENTS */}
           <div className="swipe-screen" style={{ padding: '1rem', overflowY: 'auto' }}>
-            <div className="screen-header">Club Events</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="screen-header" style={{ marginBottom: 0 }}>Club Events</div>
+              <button 
+                onClick={() => setShowEventForm(!showEventForm)}
+                style={{ background: '#3b82f6', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '16px', fontWeight: 'bold', fontSize: '0.8rem', cursor: 'pointer' }}
+              >
+                + Create
+              </button>
+            </div>
+
+            {showEventForm && (
+              <form onSubmit={handleCreateEvent} style={{ background: '#18181b', padding: '1rem', borderRadius: '1rem', marginTop: '1rem', border: '1px solid #3f3f46' }}>
+                <input type="text" placeholder="Event Title" value={eventTitle} onChange={e => setEventTitle(e.target.value)} required style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white' }} />
+                <textarea placeholder="Event Description..." value={eventDesc} onChange={e => setEventDesc(e.target.value)} required style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white', minHeight: '60px' }} />
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#a1a1aa' }}>Reward PTS:</span>
+                  <input type="number" value={eventReward} onChange={e => setEventReward(Number(e.target.value))} min={10} max={500} style={{ width: '80px', padding: '4px 8px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white' }} />
+                </div>
+                <button type="submit" style={{ width: '100%', background: '#fbbf24', border: 'none', color: 'black', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Post Event</button>
+              </form>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem', paddingBottom: '4rem' }}>
               {events.length === 0 && (
                 <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No upcoming events.</p>
