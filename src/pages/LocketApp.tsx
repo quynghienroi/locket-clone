@@ -227,7 +227,7 @@ export default function LocketApp() {
     };
     startCamera();
     return () => stream?.getTracks().forEach(track => track.stop());
-  }, [userName, capturedPhoto]);
+  }, [userName]);
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
@@ -354,7 +354,8 @@ export default function LocketApp() {
       <div className="locket-container">
         <div className="mobile-frame">
           <div className="login-overlay">
-            <div className="locket-logo-text">LOCKET</div>
+            <img src="/logo.png" alt="INNTECH" className="locket-logo-img" style={{ width: '120px', height: '120px', borderRadius: '50%', marginBottom: '1rem', objectFit: 'cover', border: '3px solid #3b82f6' }} />
+            <div className="locket-logo-text" style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>INNTECH LOCKET</div>
             
             {authStep === 'EMAIL' && (
               <>
@@ -686,6 +687,27 @@ export default function LocketApp() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* BOTTOM NAVIGATION TAB BAR */}
+        {!capturedPhoto && (
+          <div className="bottom-nav-bar" style={{ display: 'flex', justifyContent: 'space-around', padding: '12px 0', background: '#000', borderTop: '1px solid #333', position: 'absolute', bottom: 0, width: '100%', zIndex: 10 }}>
+            <button onClick={() => containerRef.current?.scrollTo({left: 0, behavior: 'smooth'})} style={{background:'transparent', border:'none', color:'#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer'}}>
+              <RotateCcw size={20} /> History
+            </button>
+            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth, behavior: 'smooth'})} style={{background:'transparent', border:'none', color:'white', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer'}}>
+              <CameraIcon size={20} /> Camera
+            </button>
+            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth * 2, behavior: 'smooth'})} style={{background:'transparent', border:'none', color:'#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer'}}>
+              <ImageIcon size={20} /> Feed
+            </button>
+            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth * 3, behavior: 'smooth'})} style={{background:'transparent', border:'none', color:'#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer'}}>
+              <Star size={20} /> Events
+            </button>
+            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth * 4, behavior: 'smooth'})} style={{background:'transparent', border:'none', color:'#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer'}}>
+              <Code size={20} /> Repos
+            </button>
           </div>
         )}
 
