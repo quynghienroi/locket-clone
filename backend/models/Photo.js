@@ -16,6 +16,10 @@ const photoSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  filter: {
+    type: String,
+    default: 'none'
+  },
   reactions: {
     type: Map,
     of: String, // username -> emoji

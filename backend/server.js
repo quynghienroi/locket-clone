@@ -320,6 +320,7 @@ io.on('connection', async (socket) => {
         targets: p.targets,
         photoBase64: p.photoBase64,
         caption: p.caption,
+        filter: p.filter || 'none',
         reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
         timestamp: p.createdAt,
         senderNote: userMap[p.sender]?.note || '',
@@ -330,14 +331,15 @@ io.on('connection', async (socket) => {
     }
 
     socket.on('send_photo', async (data) => {
-      const { targets, photoBase64, caption } = data;
+      const { targets, photoBase64, caption, filter } = data;
       
       try {
         const newPhotoDoc = new Photo({
           sender: username,
           targets,
           photoBase64,
-          caption: caption || ''
+          caption: caption || '',
+          filter: filter || 'none'
         });
         await newPhotoDoc.save();
 
@@ -352,6 +354,7 @@ io.on('connection', async (socket) => {
           targets: newPhotoDoc.targets, 
           photoBase64: newPhotoDoc.photoBase64,
           caption: newPhotoDoc.caption,
+          filter: newPhotoDoc.filter,
           reactions: {},
           timestamp: newPhotoDoc.createdAt,
           senderNote: updatedUser.statusNote || '',
@@ -370,6 +373,7 @@ io.on('connection', async (socket) => {
           targets: p.targets,
           photoBase64: p.photoBase64,
           caption: p.caption,
+          filter: p.filter || 'none',
           reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
           timestamp: p.createdAt,
           senderNote: userMap[p.sender]?.note || '',
@@ -416,6 +420,7 @@ io.on('connection', async (socket) => {
             targets: p.targets,
             photoBase64: p.photoBase64,
             caption: p.caption,
+            filter: p.filter || 'none',
             reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
             timestamp: p.createdAt,
             senderNote: userMap[p.sender]?.note || '',
