@@ -460,10 +460,10 @@ export default function LocketApp() {
           <div className="swipe-screen">
             <div className="screen-header">History</div>
             <div className="feed-container">
-              {feed.filter(p => p.sender === userName || p.targets.includes(userName) || p.targets.includes('ALL')).length === 0 && (
+              {feed.filter(p => p.sender === userName).length === 0 && (
                 <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No history yet.</p>
               )}
-              {feed.filter(p => p.sender === userName || p.targets.includes(userName) || p.targets.includes('ALL')).map(photo => (
+              {feed.filter(p => p.sender === userName).map(photo => (
                 <div key={photo.id} className="feed-item" style={{transform: 'scale(0.95)', opacity: 0.8}}>
                   <div className="feed-image-container">
                     <img src={photo.photoBase64} alt="History" />
