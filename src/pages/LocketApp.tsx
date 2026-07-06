@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Plus, Image as ImageIcon, Code, Star } from 'lucide-react';
+import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Image as ImageIcon, Code, Star } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import '../Locket.css';
 
@@ -249,8 +249,8 @@ export default function LocketApp() {
         if (flashEnabled) {
           const track = stream.getVideoTracks()[0];
           const capabilities = track.getCapabilities && track.getCapabilities();
-          if (capabilities && capabilities.torch) {
-             track.applyConstraints({ advanced: [{ torch: true }] }).catch(() => {});
+          if (capabilities && (capabilities as any).torch) {
+             track.applyConstraints({ advanced: [{ torch: true }] } as any).catch(() => {});
           }
         }
       } catch (err) {
@@ -271,8 +271,8 @@ export default function LocketApp() {
     if (streamRef.current) {
       const track = streamRef.current.getVideoTracks()[0];
       const capabilities = track.getCapabilities && track.getCapabilities();
-      if (capabilities && capabilities.torch) {
-        track.applyConstraints({ advanced: [{ torch: nextFlash }] }).catch(console.error);
+      if (capabilities && (capabilities as any).torch) {
+        track.applyConstraints({ advanced: [{ torch: nextFlash }] } as any).catch(console.error);
       }
     }
   };
