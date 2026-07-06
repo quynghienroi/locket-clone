@@ -245,7 +245,7 @@ app.get('/api/repos', async (req, res) => {
 });
 
 app.post('/api/repos', async (req, res) => {
-  const { token, url } = req.body;
+  const { token, url, customMessage } = req.body;
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findOne({ email: decoded.email });
@@ -269,6 +269,7 @@ app.post('/api/repos', async (req, res) => {
       owner: ghData.owner.login,
       name: ghData.name,
       description: ghData.description,
+      customMessage: customMessage || '',
       language: ghData.language,
       stars: ghData.stargazers_count,
       forks: ghData.forks_count

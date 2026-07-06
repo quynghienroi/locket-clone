@@ -12,6 +12,7 @@ const repoSchema = new mongoose.Schema({
   owner: String,
   name: String,
   description: String,
+  customMessage: String,
   language: String,
   stars: Number,
   forks: Number
