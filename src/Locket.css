@@ -53,6 +53,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  padding-bottom: 75px;
 }
 
 /* Screen Headers */
@@ -147,7 +148,7 @@
 .camera-view {
   flex: 1;
   margin: 0 1rem;
-  border-radius: 36px;
+  border-radius: 56px;
   background-color: #1c1c1e;
   position: relative;
   overflow: hidden;
@@ -164,11 +165,11 @@
 }
 
 .locket-footer {
-  padding: 1.5rem 2rem 2rem;
+  padding: 1rem 2rem 0.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .capture-btn-outer {
@@ -205,7 +206,7 @@
 .post-capture-preview {
   flex: 1;
   margin: 1rem 1rem 0;
-  border-radius: 36px;
+  border-radius: 48px;
   overflow: hidden;
   position: relative;
   background-color: #1c1c1e;
@@ -313,7 +314,7 @@
 
 .feed-item {
   background-color: #1c1c1e;
-  border-radius: 36px;
+  border-radius: 40px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -352,7 +353,7 @@
 .feed-image-container {
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 24px;
+  border-radius: 32px;
   overflow: hidden;
   position: relative;
 }
