@@ -11,6 +11,14 @@ const userSchema = new mongoose.Schema({
     sparse: true,
     unique: true
   },
+  themeColor: {
+    type: String,
+    default: '#fbbf24'
+  },
+  statusNote: {
+    type: String,
+    default: ''
+  },
   points: {
     type: Number,
     default: 0

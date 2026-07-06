@@ -106,7 +106,9 @@ app.post('/api/auth/verify-otp', async (req, res) => {
       token, 
       isNewUser, 
       username: user.username,
-      points: user.points
+      points: user.points,
+      themeColor: user.themeColor,
+      statusNote: user.statusNote
     });
   } catch (err) {
     console.error(err);
@@ -122,9 +124,28 @@ app.get('/api/user/me', async (req, res) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findOne({ email: decoded.email });
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ success: true, points: user.points });
+    res.json({ success: true, points: user.points, themeColor: user.themeColor, statusNote: user.statusNote });
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+// API: Update User Settings (Theme & Note)
+app.put('/api/user/settings', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  const { themeColor, statusNote } = req.body;
+  if (!token) return res.status(401).json({ error: 'No token' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOneAndUpdate(
+      { email: decoded.email },
+      { themeColor, statusNote },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ success: true, themeColor: user.themeColor, statusNote: user.statusNote });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update settings' });
   }
 });
 
@@ -285,8 +306,11 @@ io.on('connection', async (socket) => {
 
     if (username) {
       socket.join(username);
-      // Fetch latest 50 photos
+      // Fetch latest 50 photos and all users for notes/colors
       const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
+      const allUsers = await User.find({}, 'username statusNote themeColor');
+      const userMap = {};
+      allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor }; });
       
       // Convert to format expected by frontend
       const globalFeed = latestPhotos.map(p => ({
@@ -296,7 +320,9 @@ io.on('connection', async (socket) => {
         photoBase64: p.photoBase64,
         caption: p.caption,
         reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
-        timestamp: p.createdAt
+        timestamp: p.createdAt,
+        senderNote: userMap[p.sender]?.note || '',
+        senderColor: userMap[p.sender]?.color || '#fbbf24'
       }));
       
       socket.emit('feed_updated', globalFeed);
@@ -326,11 +352,17 @@ io.on('connection', async (socket) => {
           photoBase64: newPhotoDoc.photoBase64,
           caption: newPhotoDoc.caption,
           reactions: {},
-          timestamp: newPhotoDoc.createdAt
+          timestamp: newPhotoDoc.createdAt,
+          senderNote: updatedUser.statusNote || '',
+          senderColor: updatedUser.themeColor || '#fbbf24'
         };
         
         // Fetch feed again to broadcast
         const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
+        const allUsers = await User.find({}, 'username statusNote themeColor');
+        const userMap = {};
+        allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor }; });
+        
         const globalFeed = latestPhotos.map(p => ({
           id: p._id.toString(),
           sender: p.sender,
@@ -338,7 +370,9 @@ io.on('connection', async (socket) => {
           photoBase64: p.photoBase64,
           caption: p.caption,
           reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
-          timestamp: p.createdAt
+          timestamp: p.createdAt,
+          senderNote: userMap[p.sender]?.note || '',
+          senderColor: userMap[p.sender]?.color || '#fbbf24'
         }));
 
         io.emit('feed_updated', globalFeed);
@@ -371,6 +405,10 @@ io.on('connection', async (socket) => {
 
           // Broadcast updated feed
           const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
+          const allUsers = await User.find({}, 'username statusNote themeColor');
+          const userMap = {};
+          allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor }; });
+          
           const globalFeed = latestPhotos.map(p => ({
             id: p._id.toString(),
             sender: p.sender,
@@ -378,7 +416,9 @@ io.on('connection', async (socket) => {
             photoBase64: p.photoBase64,
             caption: p.caption,
             reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
-            timestamp: p.createdAt
+            timestamp: p.createdAt,
+            senderNote: userMap[p.sender]?.note || '',
+            senderColor: userMap[p.sender]?.color || '#fbbf24'
           }));
           io.emit('feed_updated', globalFeed);
         }
