@@ -20,17 +20,23 @@ interface EventData {
   date: string;
   pointsReward: number;
   participants: string[];
+  formLink?: string;
+  thumbnailUrl?: string;
 }
 interface RepoData {
   _id: string;
   sender: string;
   url: string;
-  owner: string;
-  name: string;
-  description: string;
+  title?: string;
+  owner?: string;
+  name?: string;
+  description?: string;
   customMessage?: string;
-  language: string;
-  stars: number;
+  imageUrl?: string;
+  siteName?: string;
+  domain?: string;
+  language?: string;
+  stars?: number;
 }
 
 export default function LocketApp() {
@@ -58,6 +64,7 @@ export default function LocketApp() {
   const [showEventForm, setShowEventForm] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
   const [eventDesc, setEventDesc] = useState('');
+  const [eventLink, setEventLink] = useState('');
   const [eventReward, setEventReward] = useState(50);
   
   // New features
@@ -408,14 +415,15 @@ export default function LocketApp() {
       const res = await fetch(`${BACKEND_URL}/api/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: eventTitle, description: eventDesc, date: new Date().toISOString(), pointsReward: eventReward })
+        body: JSON.stringify({ title: eventTitle, description: eventDesc, date: new Date().toISOString(), pointsReward: eventReward, formLink: eventLink })
       });
       const data = await res.json();
       if (data.success) {
-        setEvents([data.event, ...events]);
-        setShowEventForm(false);
+        setEvents([...events, data.event]);
         setEventTitle('');
         setEventDesc('');
+        setEventLink('');
+        setShowEventForm(false);
       } else {
         alert('Failed to create event');
       }
@@ -654,6 +662,7 @@ export default function LocketApp() {
               <form onSubmit={handleCreateEvent} style={{ background: '#18181b', padding: '1rem', borderRadius: '1rem', marginTop: '1rem', border: '1px solid #3f3f46' }}>
                 <input type="text" placeholder="Event Title" value={eventTitle} onChange={e => setEventTitle(e.target.value)} required style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white' }} />
                 <textarea placeholder="Event Description..." value={eventDesc} onChange={e => setEventDesc(e.target.value)} required style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white', minHeight: '60px' }} />
+                <input type="url" placeholder="Link Form (Facebook/Google)..." value={eventLink} onChange={e => setEventLink(e.target.value)} style={{ width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white' }} />
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
                   <span style={{ fontSize: '0.9rem', color: '#a1a1aa' }}>Reward PTS:</span>
                   <input type="number" value={eventReward} onChange={e => setEventReward(Number(e.target.value))} min={10} max={500} style={{ width: '80px', padding: '4px 8px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white' }} />
@@ -670,6 +679,9 @@ export default function LocketApp() {
                 const isJoined = event.participants.includes(userName || '');
                 return (
                   <div key={event._id} style={{ background: '#27272a', padding: '1rem', borderRadius: '1rem', border: '1px solid #3f3f46' }}>
+                    {event.thumbnailUrl && (
+                      <img src={event.thumbnailUrl} alt="Event Thumbnail" className="event-thumbnail" />
+                    )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                       <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>{event.title}</h3>
                       <span style={{ background: themeColor, color: 'black', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
@@ -688,7 +700,12 @@ export default function LocketApp() {
                     </div>
                     
                     <button 
-                      onClick={() => handleJoinEvent(event._id)}
+                      onClick={() => {
+                        if (event.formLink && !isJoined) {
+                          window.open(event.formLink, '_blank');
+                        }
+                        handleJoinEvent(event._id);
+                      }}
                       disabled={isJoined}
                       style={{
                         width: '100%',
@@ -702,7 +719,7 @@ export default function LocketApp() {
                         cursor: isJoined ? 'not-allowed' : 'pointer'
                       }}
                     >
-                      {isJoined ? 'Joined ✓' : 'Join Event'}
+                      {isJoined ? 'Joined ✓' : (event.formLink ? 'Mở Form Đăng Ký' : 'Join Event')}
                     </button>
                   </div>
                 );
@@ -712,21 +729,22 @@ export default function LocketApp() {
 
           {/* SCREEN 5: TECH REPOS */}
           <div className="swipe-screen" style={{ padding: '1rem', overflowY: 'auto' }}>
-            <div className="screen-header">Tech Repos</div>
+            <div className="screen-header">Shared Links</div>
             
             <form onSubmit={handleShareRepo} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '1rem' }}>
               <input 
                 type="url" 
                 value={repoUrlInput}
                 onChange={(e) => setRepoUrlInput(e.target.value)}
-                placeholder="https://github.com/..."
+                placeholder="https://... (GitHub, YouTube, Facebook)"
                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white' }}
                 required
               />
               <textarea 
                 value={repoDescInput}
                 onChange={(e) => setRepoDescInput(e.target.value)}
-                placeholder="Mô tả repo (optional)..."
+                maxLength={150}
+                placeholder="Caption (tối đa 150 ký tự)..."
                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white', minHeight: '60px' }}
               />
               <button 
@@ -740,7 +758,7 @@ export default function LocketApp() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem', paddingBottom: '4rem' }}>
               {repos.length === 0 && (
-                <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No repos shared yet.</p>
+                <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No links shared yet.</p>
               )}
               {repos.map(repo => (
                 <div key={repo._id} style={{ background: '#27272a', padding: '1rem', borderRadius: '1rem', border: '1px solid #3f3f46' }}>
@@ -748,39 +766,49 @@ export default function LocketApp() {
                     <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: themeColor, color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px' }}>
                       {repo.sender.charAt(0).toUpperCase()}
                     </div>
-                    <span style={{ color: themeColor, fontSize: '0.8rem', fontWeight: 'bold' }}>{repo.sender} shared:</span>
+                    <span style={{ color: themeColor, fontSize: '0.8rem', fontWeight: 'bold' }}>{repo.sender} shared a link:</span>
                   </div>
                   
                   {repo.customMessage && (
-                    <p style={{ color: 'white', fontSize: '1rem', marginBottom: '12px', fontStyle: 'italic' }}>
-                      "{repo.customMessage}"
+                    <p style={{ color: 'white', fontSize: '1rem', marginBottom: '12px' }}>
+                      {repo.customMessage}
                     </p>
                   )}
                   
-                  <div style={{ background: '#18181b', padding: '12px', borderRadius: '8px' }}>
-                    <h3 style={{ margin: '0 0 8px 0', color: '#3b82f6', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Code size={16} color="white" />
-                      <a href={repo.url} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'none' }}>
-                        {repo.owner}/{repo.name}
-                      </a>
-                    </h3>
-                    <p style={{ color: '#a1a1aa', fontSize: '0.85rem', margin: '0 0 12px 0', lineHeight: 1.4 }}>
-                      {repo.description || 'No description provided by GitHub.'}
-                    </p>
-                    
-                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                      {repo.language && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#fbbf24' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }}></span>
-                          {repo.language}
+                  <a href={repo.url} target="_blank" rel="noreferrer" className="link-preview-card">
+                    {repo.imageUrl && (
+                      <img src={repo.imageUrl} alt="Preview" className="link-preview-image" />
+                    )}
+                    <div className="link-preview-content">
+                      <div className="link-preview-domain">{repo.siteName || repo.domain || 'LINK'}</div>
+                      <h3 className="link-preview-title">
+                        {repo.title || repo.name || repo.url}
+                      </h3>
+                      {repo.description && (
+                        <p className="link-preview-desc">
+                          {repo.description}
+                        </p>
+                      )}
+                      
+                      {/* GitHub Specific Stats */}
+                      {(repo.language || repo.stars !== undefined) && (
+                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '8px' }}>
+                          {repo.language && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#fbbf24' }}>
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }}></span>
+                              {repo.language}
+                            </div>
+                          )}
+                          {repo.stars !== undefined && repo.stars > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#a1a1aa' }}>
+                              <Star size={14} />
+                              {repo.stars}
+                            </div>
+                          )}
                         </div>
                       )}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#a1a1aa' }}>
-                        <Star size={14} />
-                        {repo.stars}
-                      </div>
                     </div>
-                  </div>
+                  </a>
                 </div>
               ))}
             </div>
