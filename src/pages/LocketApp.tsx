@@ -57,6 +57,15 @@ export default function LocketApp() {
   const [eventDesc, setEventDesc] = useState('');
   const [eventReward, setEventReward] = useState(50);
   
+  // New features
+  const [themeColor, setThemeColor] = useState('#fbbf24');
+  const [statusNote, setStatusNote] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [cameraFilter, setCameraFilter] = useState('none');
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [flashEnabled, setFlashEnabled] = useState(false);
+  const streamRef = useRef<MediaStream | null>(null);
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const centerScreenRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -108,6 +117,8 @@ export default function LocketApp() {
         } else {
           setUserName(data.username);
           localStorage.setItem('locket_username', data.username);
+          if (data.themeColor) setThemeColor(data.themeColor);
+          if (data.statusNote) setStatusNote(data.statusNote);
         }
       } else {
         alert(data.error);
@@ -157,7 +168,11 @@ export default function LocketApp() {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           const userData = await userRes.json();
-          if (userData.success) setUserPoints(userData.points);
+          if (userData.success) {
+            setUserPoints(userData.points);
+            if (userData.themeColor) setThemeColor(userData.themeColor);
+            if (userData.statusNote) setStatusNote(userData.statusNote);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch data");
@@ -215,23 +230,54 @@ export default function LocketApp() {
 
   useEffect(() => {
     if (!userName) return; 
-    let stream: MediaStream | null = null;
     
     const startCamera = async () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 720 } },
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode, width: { ideal: 720 }, height: { ideal: 720 } },
           audio: false 
         });
+        streamRef.current = stream;
         if (videoRef.current) videoRef.current.srcObject = stream;
+        
+        // Attempt to apply torch if flashEnabled
+        if (flashEnabled) {
+          const track = stream.getVideoTracks()[0];
+          const capabilities = track.getCapabilities && track.getCapabilities();
+          if (capabilities && capabilities.torch) {
+             track.applyConstraints({ advanced: [{ torch: true }] }).catch(() => {});
+          }
+        }
       } catch (err) {
         console.error("Error accessing camera:", err);
         setPermissionDenied(true);
       }
     };
     startCamera();
-    return () => stream?.getTracks().forEach(track => track.stop());
-  }, [userName]);
+    
+    return () => {
+      if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop());
+    };
+  }, [userName, facingMode]);
+
+  const toggleFlash = () => {
+    const nextFlash = !flashEnabled;
+    setFlashEnabled(nextFlash);
+    if (streamRef.current) {
+      const track = streamRef.current.getVideoTracks()[0];
+      const capabilities = track.getCapabilities && track.getCapabilities();
+      if (capabilities && capabilities.torch) {
+        track.applyConstraints({ advanced: [{ torch: nextFlash }] }).catch(console.error);
+      }
+    }
+  };
+
+  const toggleCamera = () => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+  };
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
@@ -241,16 +287,19 @@ export default function LocketApp() {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
+        ctx.filter = cameraFilter;
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         setCapturedPhoto(canvas.toDataURL('image/jpeg', 0.8));
         setCaption('');
         
-        const flash = document.createElement('div');
-        flash.className = 'camera-flash';
-        document.body.appendChild(flash);
-        setTimeout(() => document.body.removeChild(flash), 150);
+        if (flashEnabled) {
+          const flash = document.createElement('div');
+          flash.className = 'camera-flash';
+          document.body.appendChild(flash);
+          setTimeout(() => document.body.removeChild(flash), 150);
+        }
       }
     }
   };
@@ -285,13 +334,7 @@ export default function LocketApp() {
     setSelectedTargets(newTargets);
   };
 
-  const handleAddFriend = () => {
-    const friendName = prompt("Enter your friend's username:");
-    if (friendName && friendName.trim() !== '') {
-      const name = friendName.trim();
-      if (!friends.includes(name)) setFriends([...friends, name]);
-    }
-  };
+
 
   const handleAddReaction = (photoId: string, emoji: string) => {
     if (socket) {
@@ -372,6 +415,23 @@ export default function LocketApp() {
       }
     } catch (err) {
       alert("Error creating event");
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/user/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ themeColor, statusNote })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowSettings(false);
+      }
+    } catch (err) {
+      alert("Error saving settings");
     }
   };
 
@@ -476,17 +536,12 @@ export default function LocketApp() {
           {/* CENTER SCREEN */}
           <div className="swipe-screen" ref={centerScreenRef}>
             <header className="locket-header">
-              <button className="locket-icon-btn" onClick={handleLogout} title="Logout">
-                <span style={{fontWeight: 'bold'}}>{userName.charAt(0).toUpperCase()}</span>
+              <button className="locket-icon-btn" onClick={() => setShowSettings(true)} title="Settings" style={{ border: `2px solid ${themeColor}` }}>
+                <span style={{fontWeight: 'bold', color: themeColor}}>{userName.charAt(0).toUpperCase()}</span>
               </button>
               
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '4px' }}>
-                  <div className="friend-bubble" title="Add Friend" onClick={handleAddFriend} style={{backgroundColor: '#fbbf24', color: 'black'}}>
-                    <Plus size={16} />
-                  </div>
-                </div>
-                <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 'bold' }}>{userPoints} PTS</div>
+                <div style={{ fontSize: '10px', color: themeColor, fontWeight: 'bold' }}>{userPoints} PTS</div>
               </div>
               
               <button className="locket-icon-btn" onClick={() => containerRef.current?.scrollTo({left: 9999, behavior: 'smooth'})}>
@@ -501,18 +556,33 @@ export default function LocketApp() {
                   <p>Camera access denied</p>
                 </div>
               ) : (
-                <video ref={videoRef} autoPlay playsInline muted className="live-video" />
+                <video ref={videoRef} autoPlay playsInline muted className="live-video" style={{ filter: cameraFilter }} />
               )}
               <canvas ref={canvasRef} style={{ display: 'none' }} />
+              
+              <div className="filter-selector">
+                {['none', 'grayscale(100%)', 'sepia(100%)', 'saturate(200%)', 'invert(100%)'].map(f => (
+                  <button 
+                    key={f} 
+                    className={`filter-btn ${cameraFilter === f ? 'active' : ''}`}
+                    onClick={() => setCameraFilter(f)}
+                    style={{ filter: f }}
+                  ></button>
+                ))}
+              </div>
             </main>
 
             <footer className="locket-footer">
               <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', padding: '0 2rem', marginBottom: '-1rem'}}>
-                <button className="locket-icon-btn" style={{backgroundColor: 'transparent'}}><Zap size={24}/></button>
-                <button className="locket-icon-btn" style={{backgroundColor: 'transparent'}}><RotateCcw size={24}/></button>
+                <button className="locket-icon-btn" onClick={toggleFlash} style={{backgroundColor: flashEnabled ? themeColor : 'transparent', color: flashEnabled ? 'black' : 'white'}}>
+                  <Zap size={24}/>
+                </button>
+                <button className="locket-icon-btn" onClick={toggleCamera} style={{backgroundColor: 'transparent'}}>
+                  <RotateCcw size={24}/>
+                </button>
               </div>
-              <div className="capture-btn-outer" onClick={handleCapture}>
-                <div className="capture-btn-inner"></div>
+              <div className="capture-btn-outer" onClick={handleCapture} style={{ borderColor: themeColor }}>
+                <div className="capture-btn-inner" style={{ backgroundColor: themeColor }}></div>
               </div>
             </footer>
           </div>
@@ -524,25 +594,33 @@ export default function LocketApp() {
               {feed.length === 0 && (
                 <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No photos in feed yet.</p>
               )}
-              {feed.map(photo => (
-                <div key={photo.id} className="feed-item">
-                  <div className="feed-header">
-                    <div className="feed-avatar">{photo.sender.charAt(0).toUpperCase()}</div>
-                    <div className="feed-meta">
-                      <span className="feed-sender">{photo.sender}</span>
-                      <span className="feed-time">Just now</span>
+              {feed.map(photo => {
+                // Determine if photo has custom sender props
+                const sColor = (photo as any).senderColor || '#fbbf24';
+                const sNote = (photo as any).senderNote || '';
+                return (
+                <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
+                  <div className="fb-post-header">
+                    <div className="fb-avatar-container">
+                      {sNote && <div className="avatar-note-bubble">{sNote}</div>}
+                      <div className="fb-avatar" style={{ backgroundColor: sColor }}>{photo.sender.charAt(0).toUpperCase()}</div>
+                    </div>
+                    <div className="fb-meta">
+                      <span className="fb-sender" style={{ color: sColor }}>{photo.sender}</span>
+                      <span className="fb-time">Just now</span>
                     </div>
                   </div>
-                  <div className="feed-image-container">
+                  
+                  {photo.caption && <div className="fb-caption">{photo.caption}</div>}
+                  
+                  <div className="fb-image-container">
                     <img src={photo.photoBase64} alt="Feed" />
-                    {photo.caption && (
-                      <div className="feed-caption-overlay">{photo.caption}</div>
-                    )}
                   </div>
-                  <div className="feed-reactions">
-                    <button className="reaction-btn" onClick={() => handleAddReaction(photo.id, '❤️')}>❤️</button>
-                    <button className="reaction-btn" onClick={() => handleAddReaction(photo.id, '😂')}>😂</button>
-                    <button className="reaction-btn" onClick={() => handleAddReaction(photo.id, '😮')}>😮</button>
+                  
+                  <div className="fb-reactions">
+                    <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '❤️')}>❤️</button>
+                    <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '😂')}>😂</button>
+                    <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '😮')}>😮</button>
                     <div style={{marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
                       {Object.entries(photo.reactions).map(([user, emoji]) => (
                         <span key={user} title={user}>{emoji}</span>
@@ -550,7 +628,7 @@ export default function LocketApp() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
 
@@ -588,7 +666,7 @@ export default function LocketApp() {
                   <div key={event._id} style={{ background: '#27272a', padding: '1rem', borderRadius: '1rem', border: '1px solid #3f3f46' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                       <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>{event.title}</h3>
-                      <span style={{ background: '#fbbf24', color: 'black', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                      <span style={{ background: themeColor, color: 'black', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
                         +{event.pointsReward} pts
                       </span>
                     </div>
@@ -710,7 +788,7 @@ export default function LocketApp() {
             </div>
             
             <div className="post-capture-controls">
-              <div className="send-friends-list">
+              <div className="send-friends-list" style={{ display: 'none' }}>
                 <div 
                   className={`send-friend-bubble ${selectedTargets.includes('ALL') ? 'selected' : ''}`}
                   onClick={() => toggleTarget('ALL')}
@@ -730,7 +808,7 @@ export default function LocketApp() {
               
               <div className="send-actions">
                 <button className="cancel-btn" onClick={() => setCapturedPhoto(null)}>Cancel</button>
-                <button className="send-btn" onClick={handleSend}>
+                <button className="send-btn" onClick={handleSend} style={{ backgroundColor: themeColor }}>
                   <ArrowUp size={24} strokeWidth={3} />
                 </button>
               </div>
@@ -763,7 +841,7 @@ export default function LocketApp() {
         <div className={`received-popup ${receivedPhoto ? 'show' : ''}`}>
           {receivedPhoto && (
             <>
-              <h3 style={{ color: '#fbbf24', marginBottom: '1rem', letterSpacing: '1px' }}>NEW LOCKET</h3>
+              <h3 style={{ color: (receivedPhoto as any).senderColor || '#fbbf24', marginBottom: '1rem', letterSpacing: '1px' }}>NEW LOCKET</h3>
               <div className="received-widget">
                 <img src={receivedPhoto.photoBase64} alt="Received from friend" />
               </div>
@@ -777,6 +855,54 @@ export default function LocketApp() {
             </>
           )}
         </div>
+
+        {/* SETTINGS OVERLAY */}
+        {showSettings && (
+          <div className="login-overlay" style={{ zIndex: 1000 }}>
+            <h2 style={{ marginBottom: '2rem' }}>Personal Settings</h2>
+            
+            <form onSubmit={handleSaveSettings} style={{ width: '100%', maxWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Your Note (Status)</label>
+                <input 
+                  type="text" 
+                  className="name-input"
+                  placeholder="e.g. Studying..." 
+                  value={statusNote}
+                  onChange={(e) => setStatusNote(e.target.value)}
+                  maxLength={30}
+                  style={{ marginBottom: 0 }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Theme Color</label>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {['#fbbf24', '#06b6d4', '#ec4899', '#8b5cf6', '#10b981', '#f97316', '#ff4d4f'].map(color => (
+                    <div 
+                      key={color} 
+                      onClick={() => setThemeColor(color)}
+                      style={{ 
+                        width: '40px', height: '40px', borderRadius: '50%', backgroundColor: color, 
+                        cursor: 'pointer', border: themeColor === color ? '3px solid white' : '3px solid transparent',
+                        boxShadow: themeColor === color ? `0 0 10px ${color}` : 'none'
+                      }} 
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+                <button type="button" onClick={() => setShowSettings(false)} className="continue-btn" style={{ background: '#333', color: 'white' }}>Cancel</button>
+                <button type="submit" className="continue-btn" style={{ background: themeColor, color: 'black' }}>Save</button>
+              </div>
+              
+              <button type="button" onClick={handleLogout} style={{ background: 'transparent', color: '#ff4d4f', border: 'none', fontWeight: 'bold', marginTop: '2rem', cursor: 'pointer' }}>
+                Logout
+              </button>
+            </form>
+          </div>
+        )}
 
       </div>
     </div>
