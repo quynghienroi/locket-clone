@@ -382,7 +382,7 @@ export default function LocketApp() {
         <div className="mobile-frame">
           <div className="login-overlay">
             <img src="/logo.png" alt="INNTECH" className="locket-logo-img" style={{ width: '120px', height: '120px', borderRadius: '50%', marginBottom: '1rem', objectFit: 'cover', border: '3px solid #3b82f6' }} />
-            <div className="locket-logo-text" style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>INNTECH LOCKET</div>
+            <div className="locket-logo-text" style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>INNTECH</div>
             
             {authStep === 'EMAIL' && (
               <>
