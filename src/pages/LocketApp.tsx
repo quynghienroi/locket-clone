@@ -27,6 +27,7 @@ interface RepoData {
   owner: string;
   name: string;
   description: string;
+  customMessage?: string;
   language: string;
   stars: number;
 }
@@ -51,6 +52,7 @@ export default function LocketApp() {
   const [repos, setRepos] = useState<RepoData[]>([]);
   const [userPoints, setUserPoints] = useState<number>(0);
   const [repoUrlInput, setRepoUrlInput] = useState('');
+  const [repoDescInput, setRepoDescInput] = useState('');
   const [sharingRepo, setSharingRepo] = useState(false);
   const [showEventForm, setShowEventForm] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
@@ -378,13 +380,14 @@ export default function LocketApp() {
       const res = await fetch(`${BACKEND_URL}/api/repos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, url: repoUrlInput })
+        body: JSON.stringify({ token, url: repoUrlInput, customMessage: repoDescInput })
       });
       const data = await res.json();
       if (data.success) {
         setRepos([data.repo, ...repos]);
         setUserPoints(data.points);
         setRepoUrlInput('');
+        setRepoDescInput('');
         alert(`Repo shared! You earned 10 points.`);
       } else {
         alert(data.error || 'Failed to share repo');
@@ -708,19 +711,25 @@ export default function LocketApp() {
           <div className="swipe-screen" style={{ padding: '1rem', overflowY: 'auto' }}>
             <div className="screen-header">Tech Repos</div>
             
-            <form onSubmit={handleShareRepo} style={{ display: 'flex', gap: '8px', marginTop: '1rem' }}>
+            <form onSubmit={handleShareRepo} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '1rem' }}>
               <input 
                 type="url" 
                 value={repoUrlInput}
                 onChange={(e) => setRepoUrlInput(e.target.value)}
                 placeholder="https://github.com/..."
-                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white' }}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white' }}
                 required
+              />
+              <textarea 
+                value={repoDescInput}
+                onChange={(e) => setRepoDescInput(e.target.value)}
+                placeholder="Mô tả repo (optional)..."
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white', minHeight: '60px' }}
               />
               <button 
                 type="submit" 
                 disabled={sharingRepo}
-                style={{ padding: '0 16px', borderRadius: '8px', border: 'none', background: '#fbbf24', color: 'black', fontWeight: 'bold', cursor: sharingRepo ? 'not-allowed' : 'pointer' }}
+                style={{ padding: '10px', borderRadius: '8px', border: 'none', background: themeColor, color: 'black', fontWeight: 'bold', cursor: sharingRepo ? 'not-allowed' : 'pointer' }}
               >
                 {sharingRepo ? '...' : 'Share'}
               </button>
@@ -733,11 +742,17 @@ export default function LocketApp() {
               {repos.map(repo => (
                 <div key={repo._id} style={{ background: '#27272a', padding: '1rem', borderRadius: '1rem', border: '1px solid #3f3f46' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#fbbf24', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: themeColor, color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px' }}>
                       {repo.sender.charAt(0).toUpperCase()}
                     </div>
-                    <span style={{ color: '#fbbf24', fontSize: '0.8rem', fontWeight: 'bold' }}>{repo.sender} shared:</span>
+                    <span style={{ color: themeColor, fontSize: '0.8rem', fontWeight: 'bold' }}>{repo.sender} shared:</span>
                   </div>
+                  
+                  {repo.customMessage && (
+                    <p style={{ color: 'white', fontSize: '1rem', marginBottom: '12px', fontStyle: 'italic' }}>
+                      "{repo.customMessage}"
+                    </p>
+                  )}
                   
                   <div style={{ background: '#18181b', padding: '12px', borderRadius: '8px' }}>
                     <h3 style={{ margin: '0 0 8px 0', color: '#3b82f6', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -747,7 +762,7 @@ export default function LocketApp() {
                       </a>
                     </h3>
                     <p style={{ color: '#a1a1aa', fontSize: '0.85rem', margin: '0 0 12px 0', lineHeight: 1.4 }}>
-                      {repo.description || 'No description provided.'}
+                      {repo.description || 'No description provided by GitHub.'}
                     </p>
                     
                     <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
