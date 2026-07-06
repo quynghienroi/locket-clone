@@ -9,6 +9,7 @@ interface PhotoData {
   targets: string[];
   photoBase64: string;
   caption: string;
+  filter?: string;
   reactions: Record<string, string>;
   timestamp: string;
 }
@@ -289,9 +290,10 @@ export default function LocketApp() {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.filter = cameraFilter;
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
+        if (facingMode === 'user') {
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+        }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         setCapturedPhoto(canvas.toDataURL('image/jpeg', 0.8));
         setCaption('');
@@ -311,7 +313,8 @@ export default function LocketApp() {
       socket.emit('send_photo', {
         targets: selectedTargets,
         photoBase64: capturedPhoto,
-        caption: caption
+        caption: caption,
+        filter: cameraFilter
       });
       setCapturedPhoto(null);
       const container = containerRef.current;
@@ -529,7 +532,7 @@ export default function LocketApp() {
               {feed.filter(p => p.sender === userName).map(photo => (
                 <div key={photo.id} className="feed-item" style={{transform: 'scale(0.95)', opacity: 0.8}}>
                   <div className="feed-image-container">
-                    <img src={photo.photoBase64} alt="History" />
+                    <img src={photo.photoBase64} alt="History" style={{ filter: photo.filter || 'none' }} />
                   </div>
                 </div>
               ))}
@@ -559,7 +562,7 @@ export default function LocketApp() {
                   <p>Camera access denied</p>
                 </div>
               ) : (
-                <video ref={videoRef} autoPlay playsInline muted className="live-video" style={{ filter: cameraFilter }} />
+                <video ref={videoRef} autoPlay playsInline muted className="live-video" style={{ filter: cameraFilter, transform: facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)' }} />
               )}
               <canvas ref={canvasRef} style={{ display: 'none' }} />
               
@@ -617,7 +620,7 @@ export default function LocketApp() {
                   {photo.caption && <div className="fb-caption">{photo.caption}</div>}
                   
                   <div className="fb-image-container">
-                    <img src={photo.photoBase64} alt="Feed" />
+                    <img src={photo.photoBase64} alt="Feed" style={{ filter: photo.filter || 'none' }} />
                   </div>
                   
                   <div className="fb-reactions">
@@ -789,7 +792,7 @@ export default function LocketApp() {
         {capturedPhoto && (
           <div className="post-capture-overlay">
             <div className="post-capture-preview">
-              <img src={capturedPhoto} alt="Captured" />
+              <img src={capturedPhoto} alt="Captured" style={{ filter: cameraFilter }} />
               <div className="post-capture-caption">
                 <input 
                   type="text" 
