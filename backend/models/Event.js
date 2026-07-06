@@ -13,6 +13,8 @@ const eventSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  formLink: String,
+  thumbnailUrl: String,
   pointsReward: {
     type: Number,
     default: 50

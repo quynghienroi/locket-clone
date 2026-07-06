@@ -5,6 +5,7 @@ const cors = require('cors');
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const { getLinkPreview } = require('link-preview-js');
 require('dotenv').config();
 
 const User = require('./models/User');
@@ -190,9 +191,20 @@ app.get('/api/events', async (req, res) => {
 
 // API: Create new event (Admin)
 app.post('/api/events', async (req, res) => {
-  const { title, description, date, pointsReward } = req.body;
+  const { title, description, date, pointsReward, formLink } = req.body;
   try {
-    const newEvent = new Event({ title, description, date, pointsReward });
+    let thumbnailUrl = '';
+    if (formLink) {
+      try {
+        const preview = await getLinkPreview(formLink, { timeout: 3000 });
+        if (preview && preview.images && preview.images.length > 0) {
+          thumbnailUrl = preview.images[0].url;
+        }
+      } catch (e) {
+        console.error('Failed to fetch event thumbnail:', e.message);
+      }
+    }
+    const newEvent = new Event({ title, description, date, pointsReward, formLink, thumbnailUrl });
     await newEvent.save();
     res.json({ success: true, event: newEvent });
   } catch (err) {
@@ -251,28 +263,76 @@ app.post('/api/repos', async (req, res) => {
     const user = await User.findOne({ email: decoded.email });
     if (!user || !user.username) return res.status(404).json({ error: 'User not found' });
 
-    // Parse GitHub URL
-    // e.g. https://github.com/facebook/react
-    const urlParts = url.replace('https://github.com/', '').split('/');
-    if (urlParts.length < 2) return res.status(400).json({ error: 'Invalid GitHub URL' });
-    const owner = urlParts[0];
-    const name = urlParts[1];
+    let title = '';
+    let description = '';
+    let imageUrl = '';
+    let siteName = '';
+    let owner = '';
+    let name = '';
+    let language = '';
+    let stars = 0;
+    let forks = 0;
+    
+    // Parse domain
+    let domain = '';
+    try {
+      const parsedUrl = new URL(url);
+      domain = parsedUrl.hostname.replace('www.', '');
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid URL' });
+    }
 
-    // Fetch from GitHub API
-    const ghRes = await fetch(`https://api.github.com/repos/${owner}/${name}`);
-    if (!ghRes.ok) return res.status(400).json({ error: 'GitHub Repo not found' });
-    const ghData = await ghRes.json();
+    try {
+      const preview = await getLinkPreview(url, { timeout: 4000 });
+      if (preview) {
+        title = preview.title || '';
+        description = preview.description || '';
+        siteName = preview.siteName || domain;
+        if (preview.images && preview.images.length > 0) {
+          imageUrl = preview.images[0].url;
+        }
+      }
+    } catch (e) {
+      console.log("Could not fetch link preview for", url);
+    }
+
+    // If it's a GitHub link, fetch extra GitHub stats
+    if (domain === 'github.com') {
+      const urlParts = url.replace('https://github.com/', '').replace('http://github.com/', '').split('/');
+      if (urlParts.length >= 2) {
+        owner = urlParts[0];
+        name = urlParts[1];
+        try {
+          const ghRes = await fetch(`https://api.github.com/repos/${owner}/${name}`);
+          if (ghRes.ok) {
+            const ghData = await ghRes.json();
+            title = title || ghData.name;
+            description = description || ghData.description;
+            language = ghData.language;
+            stars = ghData.stargazers_count;
+            forks = ghData.forks_count;
+            siteName = 'GitHub';
+          }
+        } catch (e) {
+          console.log("GitHub API failed");
+        }
+      }
+    }
 
     const newRepo = new Repo({
       sender: user.username,
       url,
-      owner: ghData.owner.login,
-      name: ghData.name,
-      description: ghData.description,
+      title,
+      owner,
+      name,
+      description,
       customMessage: customMessage || '',
-      language: ghData.language,
-      stars: ghData.stargazers_count,
-      forks: ghData.forks_count
+      imageUrl,
+      siteName,
+      domain,
+      language,
+      stars,
+      forks
     });
     await newRepo.save();
 
