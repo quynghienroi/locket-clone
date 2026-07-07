@@ -10,6 +10,7 @@ require('dotenv').config();
 
 const User = require('./models/User');
 const Photo = require('./models/Photo');
+const broadcastFeed = require('./broadcastHelper');
 const Event = require('./models/Event');
 const Repo = require('./models/Repo');
 
@@ -170,6 +171,12 @@ app.post('/api/user/note', async (req, res) => {
       });
     }
     await user.save();
+    
+    const io = req.app.get('io');
+    if (io) {
+      await broadcastFeed(Photo, User, io);
+    }
+    
     res.json({ success: true, statusNote: user.statusNote, statusMusic: user.statusMusic, noteHistory: user.noteHistory });
   } catch (err) {
     res.status(500).json({ error: 'Failed to add note' });
@@ -212,6 +219,12 @@ app.delete('/api/user/note/:id', async (req, res) => {
     }
     
     await user.save();
+    
+    const io = req.app.get('io');
+    if (io) {
+      await broadcastFeed(Photo, User, io);
+    }
+    
     res.json({ success: true, statusNote: user.statusNote, statusMusic: user.statusMusic, noteHistory: user.noteHistory });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete note' });
@@ -509,27 +522,7 @@ io.on('connection', async (socket) => {
 
     if (username) {
       socket.join(username);
-      // Fetch latest 50 photos and all users for notes/colors
-      const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
-      const allUsers = await User.find({}, 'username statusNote themeColor');
-      const userMap = {};
-      allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor, music: u.statusMusic }; });
-      
-      // Convert to format expected by frontend
-      const globalFeed = latestPhotos.map(p => ({
-        id: p._id.toString(),
-        sender: p.sender,
-        targets: p.targets,
-        photoBase64: p.photoBase64,
-        caption: p.caption,
-        filter: p.filter || 'none',
-        reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
-        timestamp: p.createdAt,
-        senderNote: userMap[p.sender]?.note || '',
-        senderColor: userMap[p.sender]?.color || '#fbbf24', senderMusic: userMap[p.sender]?.music || null
-      }));
-      
-      socket.emit('feed_updated', globalFeed);
+      await broadcastFeed(Photo, User, io);
     }
 
     socket.on('send_photo', async (data) => {
@@ -563,26 +556,7 @@ io.on('connection', async (socket) => {
           senderColor: updatedUser.themeColor || '#fbbf24'
         };
         
-        // Fetch feed again to broadcast
-        const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
-        const allUsers = await User.find({}, 'username statusNote themeColor');
-        const userMap = {};
-        allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor, music: u.statusMusic }; });
-        
-        const globalFeed = latestPhotos.map(p => ({
-          id: p._id.toString(),
-          sender: p.sender,
-          targets: p.targets,
-          photoBase64: p.photoBase64,
-          caption: p.caption,
-          filter: p.filter || 'none',
-          reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
-          timestamp: p.createdAt,
-          senderNote: userMap[p.sender]?.note || '',
-          senderColor: userMap[p.sender]?.color || '#fbbf24', senderMusic: userMap[p.sender]?.music || null
-        }));
-
-        io.emit('feed_updated', globalFeed);
+        await broadcastFeed(Photo, User, io);
 
         if (targets.includes('ALL')) {
           socket.broadcast.emit('receive_photo', newPhoto);
@@ -602,26 +576,7 @@ io.on('connection', async (socket) => {
         if (photo && photo.sender === username) {
           await Photo.findByIdAndDelete(photoId);
           
-          // Broadcast updated feed
-          const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
-          const allUsers = await User.find({}, 'username statusNote themeColor');
-          const userMap = {};
-          allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor, music: u.statusMusic }; });
-          
-          const globalFeed = latestPhotos.map(p => ({
-            id: p._id.toString(),
-            sender: p.sender,
-            targets: p.targets,
-            photoBase64: p.photoBase64,
-            caption: p.caption,
-            filter: p.filter || 'none',
-            reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
-            timestamp: p.createdAt,
-            senderNote: userMap[p.sender]?.note || '',
-            senderColor: userMap[p.sender]?.color || '#fbbf24', senderMusic: userMap[p.sender]?.music || null
-          }));
-
-          io.emit('feed_updated', globalFeed);
+          await broadcastFeed(Photo, User, io);
         }
       } catch (err) {
         console.error("Error deleting photo:", err);
@@ -643,24 +598,7 @@ io.on('connection', async (socket) => {
           socket.emit('points_updated', updatedUser.points);
 
           // Broadcast updated feed
-          const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
-          const allUsers = await User.find({}, 'username statusNote themeColor');
-          const userMap = {};
-          allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor, music: u.statusMusic }; });
-          
-          const globalFeed = latestPhotos.map(p => ({
-            id: p._id.toString(),
-            sender: p.sender,
-            targets: p.targets,
-            photoBase64: p.photoBase64,
-            caption: p.caption,
-            filter: p.filter || 'none',
-            reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
-            timestamp: p.createdAt,
-            senderNote: userMap[p.sender]?.note || '',
-            senderColor: userMap[p.sender]?.color || '#fbbf24', senderMusic: userMap[p.sender]?.music || null
-          }));
-          io.emit('feed_updated', globalFeed);
+          await broadcastFeed(Photo, User, io);
         }
       } catch (err) {
         console.error("Error adding reaction:", err);
