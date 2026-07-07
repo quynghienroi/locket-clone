@@ -605,11 +605,11 @@
 
 .fb-sender {
   font-weight: bold;
-  font-size: 1.05rem;
+  font-size: 0.8rem;
 }
 
 .fb-time {
-  font-size: 0.8rem;
+  font-size: 0.6rem;
   color: #888;
   margin-top: 2px;
 }
