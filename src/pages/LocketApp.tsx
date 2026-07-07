@@ -78,6 +78,8 @@ export default function LocketApp() {
   const [activeTab, setActiveTab] = useState(1);
   const streamRef = useRef<MediaStream | null>(null);
   
+  const [photoToSave, setPhotoToSave] = useState<PhotoData | null>(null);
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const centerScreenRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -317,6 +319,13 @@ export default function LocketApp() {
     }
   };
 
+  const handleDeletePhoto = (photo: PhotoData) => {
+    if (socket) {
+      socket.emit('delete_photo', photo.id);
+    }
+    setPhotoToSave(photo);
+  };
+
   const handleSend = () => {
     if (socket && capturedPhoto) {
       socket.emit('send_photo', {
@@ -529,6 +538,27 @@ export default function LocketApp() {
   // ---------------- MAIN APP ----------------
   return (
     <div className="locket-container">
+      {photoToSave && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <img src={photoToSave.photoBase64} alt="Save" style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: '16px', filter: photoToSave.filter || 'none', objectFit: 'contain' }} />
+          <h3 style={{ color: 'white', margin: '1.5rem 0 1rem', textAlign: 'center', fontSize: '1.1rem' }}>Đã gỡ ảnh! Bạn có muốn tải về máy không?</h3>
+          <div style={{ display: 'flex', gap: '15px' }}>
+            <button onClick={() => setPhotoToSave(null)} style={{ padding: '12px 24px', borderRadius: '24px', background: '#333', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }}>Bỏ qua</button>
+            <button 
+              onClick={() => {
+                const a = document.createElement('a');
+                a.href = photoToSave.photoBase64;
+                a.download = `inntech_${Date.now()}.png`;
+                a.click();
+                setPhotoToSave(null);
+              }} 
+              style={{ padding: '12px 24px', borderRadius: '24px', background: themeColor, color: 'black', border: 'none', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }}
+            >
+              Lưu về máy
+            </button>
+          </div>
+        </div>
+      )}
       <div className="mobile-frame">
         <div 
           className="swipe-container" 
@@ -636,6 +666,14 @@ export default function LocketApp() {
                       <span className="fb-sender" style={{ color: sColor }}>{photo.sender}</span>
                       <span className="fb-time">Just now</span>
                     </div>
+                    {photo.sender === userName && (
+                      <button 
+                        onClick={() => handleDeletePhoto(photo)}
+                        style={{ marginLeft: 'auto', background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', padding: '4px 8px' }}
+                      >
+                        Gỡ
+                      </button>
+                    )}
                   </div>
                   
                   {photo.caption && <div className="fb-caption">{photo.caption}</div>}
