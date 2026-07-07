@@ -554,42 +554,105 @@
 }
 
 /* Fire / Angry */
-@keyframes fireFlicker {
-  0% { box-shadow: 0 0 10px #ff4500, 0 0 20px #ff4500, inset 0 0 10px #ff4500; background: #ff4500; color: white; }
-  50% { box-shadow: 0 0 15px #ff8c00, 0 0 30px #ff8c00, inset 0 0 15px #ff8c00; background: #ff6500; color: white; }
-  100% { box-shadow: 0 0 10px #ff4500, 0 0 20px #ff4500, inset 0 0 10px #ff4500; background: #ff4500; color: white; }
-}
 .note-emotion-fire {
-  animation: popIn 0.3s forwards, fireFlicker 1s infinite alternate;
+  background: linear-gradient(to top, #ff4500, #ff8c00);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 69, 0, 0.6);
+  animation: popIn 0.3s forwards, fireShake 2s infinite alternate;
+}
+@keyframes fireShake {
+  0% { transform: scale(1) translateY(0); }
+  100% { transform: scale(1.02) translateY(-2px); box-shadow: 0 4px 20px rgba(255,69,0,0.8); }
 }
 
 /* Thunder / Sad */
-@keyframes thunderFlash {
-  0%, 90%, 94%, 98%, 100% { background: #1a1a1a; color: #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.8); }
-  92%, 96% { background: #fff; color: #000; box-shadow: 0 0 20px #fff; }
-}
 .note-emotion-thunder {
+  background: linear-gradient(to bottom, #2b2b2b, #1a1a1a);
+  color: #e0e0e0;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.8);
   animation: popIn 0.3s forwards, thunderFlash 4s infinite;
+}
+@keyframes thunderFlash {
+  0%, 90%, 94%, 98%, 100% { background: linear-gradient(to bottom, #2b2b2b, #1a1a1a); color: #ccc; }
+  92%, 96% { background: #fff; color: #000; box-shadow: 0 0 25px #fff, 0 0 50px #fff; }
 }
 
 /* Love / Pink */
-@keyframes lovePulse {
-  0% { transform: scale(1); box-shadow: 0 0 10px #ff1493; background: #ff1493; color: white; }
-  50% { transform: scale(1.05); box-shadow: 0 0 25px #ff69b4; background: #ff69b4; color: white; }
-  100% { transform: scale(1); box-shadow: 0 0 10px #ff1493; background: #ff1493; color: white; }
-}
 .note-emotion-love {
+  background: linear-gradient(135deg, #ff1493, #ff69b4);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 20, 147, 0.5);
   animation: popIn 0.3s forwards, lovePulse 1.5s infinite;
   transform-origin: center bottom;
 }
+@keyframes lovePulse {
+  0% { transform: scale(1); box-shadow: 0 4px 15px rgba(255, 20, 147, 0.5); }
+  50% { transform: scale(1.05); box-shadow: 0 4px 25px rgba(255, 105, 180, 0.8); }
+  100% { transform: scale(1); box-shadow: 0 4px 15px rgba(255, 20, 147, 0.5); }
+}
 
 /* Creative / Yellow */
-@keyframes creativeGlow {
-  0% { box-shadow: 0 0 10px #ffd700; background: #ffd700; color: #000; }
-  100% { box-shadow: 0 0 25px #ffeb3b, 0 0 5px #fff; background: #ffeb3b; color: #000; }
-}
 .note-emotion-creative {
+  background: linear-gradient(135deg, #ffd700, #ffb300);
+  color: #000;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.6);
   animation: popIn 0.3s forwards, creativeGlow 2s infinite alternate;
+}
+@keyframes creativeGlow {
+  0% { box-shadow: 0 0 10px #ffd700; background: linear-gradient(135deg, #ffd700, #ffb300); }
+  100% { box-shadow: 0 0 25px #ffeb3b, 0 0 10px #fff; background: linear-gradient(135deg, #ffeb3b, #ffc107); }
+}
+
+/* Particle Effects */
+.particle {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+}
+.particle-fire {
+  top: -15px; right: -10px; font-size: 24px;
+  animation: floatUp 1.5s infinite linear;
+  opacity: 0.8;
+}
+.particle-rain-1 {
+  bottom: -15px; left: 15%; font-size: 14px;
+  animation: rainDrop 1s infinite linear;
+  opacity: 0.7;
+}
+.particle-rain-2 {
+  bottom: -10px; right: 15%; font-size: 14px;
+  animation: rainDrop 1.2s infinite linear 0.5s;
+  opacity: 0.7;
+}
+.particle-love-1 {
+  top: -10px; left: -5px; font-size: 16px;
+  animation: floatUp 2s infinite ease-in;
+}
+.particle-love-2 {
+  top: 5px; right: -10px; font-size: 14px;
+  animation: floatUp 1.8s infinite ease-in 0.7s;
+}
+.particle-creative-1 {
+  top: -8px; left: 5px; font-size: 18px;
+  animation: twinkle 1.5s infinite alternate;
+}
+.particle-creative-2 {
+  bottom: -5px; right: -5px; font-size: 16px;
+  animation: twinkle 1.2s infinite alternate 0.5s;
+}
+
+@keyframes rainDrop {
+  0% { transform: translateY(-10px); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(15px); opacity: 0; }
+}
+@keyframes twinkle {
+  0% { opacity: 0.3; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1.2); }
+}
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-25px) scale(1.5); opacity: 0; }
 }
 
 @keyframes popIn {

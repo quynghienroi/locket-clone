@@ -774,6 +774,7 @@ export default function LocketApp() {
                   const count = senderPhotoCount[photo.sender] || 0;
                   senderPhotoCount[photo.sender] = count + 1;
                   const showNote = count < 3 && (sNote || sMusic);
+                  const emotion = getEmotion(sNote, sMusic);
 
                   return (
                   <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
@@ -781,13 +782,18 @@ export default function LocketApp() {
                       <div className="fb-avatar-container">
                         {showNote ? (
                           <div 
-                            className={`avatar-note-bubble note-emotion-${getEmotion(sNote, sMusic)}`}
+                            className={`avatar-note-bubble note-emotion-${emotion}`}
                             onClick={() => handleNoteClick(sMusic?.previewUrl)}
-                            style={{ cursor: sMusic ? 'pointer' : 'default' }}
+                            style={{ cursor: sMusic ? 'pointer' : 'default', overflow: 'visible' }}
                           >
-                            {sNote && <div style={{marginBottom: sMusic ? '4px' : '0'}}>{sNote}</div>}
+                            {emotion === 'fire' && <div className="particle particle-fire">🔥</div>}
+                            {emotion === 'thunder' && <><div className="particle particle-rain-1">💧</div><div className="particle particle-rain-2">💧</div></>}
+                            {emotion === 'love' && <><div className="particle particle-love-1">❤️</div><div className="particle particle-love-2">💕</div></>}
+                            {emotion === 'creative' && <><div className="particle particle-creative-1">✨</div><div className="particle particle-creative-2">💡</div></>}
+                            
+                            {sNote && <div style={{marginBottom: sMusic ? '4px' : '0', position: 'relative', zIndex: 2}}>{sNote}</div>}
                             {sMusic && (
-                              <div className="avatar-music-player">
+                              <div className="avatar-music-player" style={{ position: 'relative', zIndex: 2 }}>
                                 <div style={{fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px'}}>
                                   <span className={playingAudio === sMusic.previewUrl ? 'music-icon-spin' : ''}>🎵</span>
                                   <div className="marquee" style={{maxWidth: '120px'}}><span>{sMusic.title} - {sMusic.artist}</span></div>
