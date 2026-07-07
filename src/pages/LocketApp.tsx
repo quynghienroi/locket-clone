@@ -226,7 +226,43 @@ export default function LocketApp() {
     setLoading(false);
   };
 
-  // --- App Logic ---
+  const handleDeleteRepo = async (id: string) => {
+    if (!window.confirm("Bạn có chắc chắn muốn gỡ Link này không?")) return;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/repos/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRepos(repos.filter(r => r._id !== id));
+      } else {
+        alert(data.error);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    if (!window.confirm("Bạn có chắc chắn muốn gỡ sự kiện này không?")) return;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/events/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEvents(events.filter(e => e._id !== id));
+      } else {
+        alert(data.error);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // --- Utility ---
   useEffect(() => {
     const fetchEventsAndPoints = async () => {
       try {
@@ -835,7 +871,15 @@ export default function LocketApp() {
                     <RichMediaEmbed repo={event} />
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', marginTop: '12px' }}>
-                      <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>{event.title}</h3>
+                      <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {event.title}
+                        <button 
+                          onClick={() => handleDeleteEvent(event._id)}
+                          style={{ background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px' }}
+                        >
+                          Gỡ
+                        </button>
+                      </h3>
                       <span style={{ background: themeColor, color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
                         +{event.pointsReward} pts
                       </span>
@@ -919,6 +963,15 @@ export default function LocketApp() {
                       {repo.sender.charAt(0).toUpperCase()}
                     </div>
                     <span style={{ color: themeColor, fontSize: '0.8rem', fontWeight: 'bold' }}>{repo.sender} shared a link:</span>
+                    
+                    {repo.sender === userName && (
+                      <button 
+                        onClick={() => handleDeleteRepo(repo._id)}
+                        style={{ marginLeft: 'auto', background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px' }}
+                      >
+                        Gỡ
+                      </button>
+                    )}
                   </div>
                   
                   {repo.customMessage && (

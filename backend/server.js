@@ -280,6 +280,30 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
+// API: Delete a repo
+app.delete('/api/repos/:id', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'No token' });
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ email: decoded.email });
+    
+    const repo = await Repo.findById(req.params.id);
+    if (!repo) return res.status(404).json({ error: 'Repo not found' });
+    
+    // Check if the user deleting is the sender
+    if (repo.sender !== user.username) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    await Repo.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Repo deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete repo' });
+  }
+});
+
 // API: Join an event
 app.post('/api/events/:id/join', async (req, res) => {
   const { token } = req.body;
@@ -308,7 +332,22 @@ app.post('/api/events/:id/join', async (req, res) => {
 
     res.json({ success: true, message: 'Joined successfully', points: user.points, event });
   } catch (err) {
-    res.status(401).json({ error: 'Authentication failed' });
+    res.status(500).json({ error: 'Failed to join event' });
+  }
+});
+
+// API: Delete an event
+app.delete('/api/events/:id', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'No token' });
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, JWT_SECRET); // Basic verification
+    
+    await Event.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Event deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete event' });
   }
 });
 
