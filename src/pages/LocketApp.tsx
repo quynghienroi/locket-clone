@@ -328,7 +328,7 @@ export default function LocketApp() {
       setCapturedPhoto(null);
       const container = containerRef.current;
       if (container) {
-        container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
+        container.scrollTo({ left: container.clientWidth * 2, behavior: 'smooth' });
       }
     }
   };
