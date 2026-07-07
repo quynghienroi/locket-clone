@@ -712,3 +712,24 @@
   border-radius: 8px;
   margin-bottom: 12px;
 }
+
+.music-icon-spin {
+  display: inline-block;
+  animation: spin 3s linear infinite;
+}
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+.marquee {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.marquee span {
+  display: inline-block;
+  animation: marquee 5s linear infinite;
+}
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Image as ImageIcon, Code, Star } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { RichMediaEmbed } from '../components/RichMediaEmbed';
+import { NoteChat } from '../components/NoteChat';
 import '../Locket.css';
 
 const getEmotion = (caption: string) => {
@@ -92,6 +93,7 @@ export default function LocketApp() {
   const [statusNote, setStatusNote] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [cameraFilter, setCameraFilter] = useState('none');
+  const [showNoteChat, setShowNoteChat] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [activeTab, setActiveTab] = useState(1);
@@ -674,13 +676,23 @@ export default function LocketApp() {
                 // Determine if photo has custom sender props
                 const sColor = (photo as any).senderColor || '#2563eb';
                 const sNote = (photo as any).senderNote || '';
+                const sMusic = (photo as any).senderMusic || null;
                 return (
                 <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
                   <div className="fb-post-header">
                     <div className="fb-avatar-container">
-                      {sNote && (
+                      {(sNote || sMusic) && (
                         <div className={`avatar-note-bubble note-emotion-${getEmotion(sNote)}`}>
-                          {sNote}
+                          {sNote && <div style={{marginBottom: sMusic ? '4px' : '0'}}>{sNote}</div>}
+                          {sMusic && (
+                            <div className="avatar-music-player">
+                              <div style={{fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                                <span className="music-icon-spin">🎵</span>
+                                <div className="marquee" style={{maxWidth: '120px'}}><span>{sMusic.title} - {sMusic.artist}</span></div>
+                              </div>
+                              <audio src={sMusic.previewUrl} controls style={{height: '25px', width: '130px', marginTop: '5px'}}/>
+                            </div>
+                          )}
                         </div>
                       )}
                       <div className="fb-avatar" style={{ backgroundColor: sColor }}>{photo.sender.charAt(0).toUpperCase()}</div>
@@ -990,6 +1002,41 @@ export default function LocketApp() {
         )}
 
       </div>
+      
+      {/* Floating Action Button for ÁDUUUU Note Chat */}
+      {userName && (
+        <button 
+          onClick={() => setShowNoteChat(true)}
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            backgroundColor: themeColor,
+            color: '#000',
+            border: 'none',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'pointer',
+            zIndex: 900
+          }}
+        >
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </button>
+      )}
+
+      {showNoteChat && (
+        <NoteChat 
+          isOpen={showNoteChat} 
+          onClose={() => setShowNoteChat(false)} 
+          token={token} 
+        />
+      )}
+
     </div>
   );
 }

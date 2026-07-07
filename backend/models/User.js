@@ -19,6 +19,20 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  statusMusic: {
+    title: String,
+    artist: String,
+    previewUrl: String
+  },
+  noteHistory: [{
+    text: String,
+    music: {
+      title: String,
+      artist: String,
+      previewUrl: String
+    },
+    createdAt: { type: Date, default: Date.now }
+  }],
   points: {
     type: Number,
     default: 0

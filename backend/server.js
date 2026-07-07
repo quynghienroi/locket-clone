@@ -150,6 +150,46 @@ app.put('/api/user/settings', async (req, res) => {
   }
 });
 
+// API: Add Note to History (ÁDUUUU Chat)
+app.post('/api/user/note', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  const { statusNote, statusMusic } = req.body;
+  if (!token) return res.status(401).json({ error: 'No token' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ email: decoded.email });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    user.statusNote = statusNote || '';
+    user.statusMusic = statusMusic || null;
+    if (statusNote || statusMusic) {
+      user.noteHistory.push({
+        text: statusNote || '',
+        music: statusMusic || null,
+        createdAt: new Date()
+      });
+    }
+    await user.save();
+    res.json({ success: true, statusNote: user.statusNote, statusMusic: user.statusMusic, noteHistory: user.noteHistory });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add note' });
+  }
+});
+
+// API: Get Note History
+app.get('/api/user/notes', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ email: decoded.email });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ success: true, noteHistory: user.noteHistory });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch notes' });
+  }
+});
+
 // API: Set Username
 app.post('/api/auth/set-username', async (req, res) => {
   const { token, username } = req.body;
@@ -406,7 +446,7 @@ io.on('connection', async (socket) => {
       const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
       const allUsers = await User.find({}, 'username statusNote themeColor');
       const userMap = {};
-      allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor }; });
+      allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor, music: u.statusMusic }; });
       
       // Convert to format expected by frontend
       const globalFeed = latestPhotos.map(p => ({
@@ -419,7 +459,7 @@ io.on('connection', async (socket) => {
         reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
         timestamp: p.createdAt,
         senderNote: userMap[p.sender]?.note || '',
-        senderColor: userMap[p.sender]?.color || '#fbbf24'
+        senderColor: userMap[p.sender]?.color || '#fbbf24', senderMusic: userMap[p.sender]?.music || null
       }));
       
       socket.emit('feed_updated', globalFeed);
@@ -460,7 +500,7 @@ io.on('connection', async (socket) => {
         const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
         const allUsers = await User.find({}, 'username statusNote themeColor');
         const userMap = {};
-        allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor }; });
+        allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor, music: u.statusMusic }; });
         
         const globalFeed = latestPhotos.map(p => ({
           id: p._id.toString(),
@@ -472,7 +512,7 @@ io.on('connection', async (socket) => {
           reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
           timestamp: p.createdAt,
           senderNote: userMap[p.sender]?.note || '',
-          senderColor: userMap[p.sender]?.color || '#fbbf24'
+          senderColor: userMap[p.sender]?.color || '#fbbf24', senderMusic: userMap[p.sender]?.music || null
         }));
 
         io.emit('feed_updated', globalFeed);
@@ -499,7 +539,7 @@ io.on('connection', async (socket) => {
           const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
           const allUsers = await User.find({}, 'username statusNote themeColor');
           const userMap = {};
-          allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor }; });
+          allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor, music: u.statusMusic }; });
           
           const globalFeed = latestPhotos.map(p => ({
             id: p._id.toString(),
@@ -511,7 +551,7 @@ io.on('connection', async (socket) => {
             reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
             timestamp: p.createdAt,
             senderNote: userMap[p.sender]?.note || '',
-            senderColor: userMap[p.sender]?.color || '#fbbf24'
+            senderColor: userMap[p.sender]?.color || '#fbbf24', senderMusic: userMap[p.sender]?.music || null
           }));
 
           io.emit('feed_updated', globalFeed);
@@ -539,7 +579,7 @@ io.on('connection', async (socket) => {
           const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
           const allUsers = await User.find({}, 'username statusNote themeColor');
           const userMap = {};
-          allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor }; });
+          allUsers.forEach(u => { userMap[u.username] = { note: u.statusNote, color: u.themeColor, music: u.statusMusic }; });
           
           const globalFeed = latestPhotos.map(p => ({
             id: p._id.toString(),
@@ -551,7 +591,7 @@ io.on('connection', async (socket) => {
             reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
             timestamp: p.createdAt,
             senderNote: userMap[p.sender]?.note || '',
-            senderColor: userMap[p.sender]?.color || '#fbbf24'
+            senderColor: userMap[p.sender]?.color || '#fbbf24', senderMusic: userMap[p.sender]?.music || null
           }));
           io.emit('feed_updated', globalFeed);
         }
