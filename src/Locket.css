@@ -87,7 +87,7 @@
   font-weight: 900;
   letter-spacing: 4px;
   margin-bottom: 1rem;
-  color: #fbbf24;
+  color: #2563eb;
 }
 
 .login-subtitle {
@@ -112,8 +112,8 @@
 }
 
 .continue-btn {
-  background-color: #fbbf24;
-  color: #000;
+  background-color: #2563eb;
+  color: #ffffff;
   width: 100%;
   padding: 1rem 1.5rem;
   border-radius: 20px;
@@ -175,7 +175,7 @@
   width: 86px;
   height: 86px;
   border-radius: 50%;
-  border: 5px solid #fbbf24;
+  border: 5px solid #2563eb;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -186,7 +186,7 @@
   width: 66px;
   height: 66px;
   border-radius: 50%;
-  background-color: #fbbf24;
+  background-color: white;
 }
 
 /* Post Capture UI */
@@ -268,8 +268,8 @@
 }
 
 .send-friend-bubble.selected {
-  border-color: #fbbf24;
-  background-color: rgba(251, 191, 36, 0.2);
+  border-color: #2563eb;
+  background-color: rgba(37, 99, 235, 0.2);
 }
 
 .send-actions {
@@ -287,8 +287,8 @@
 }
 
 .send-btn {
-  background-color: #fbbf24;
-  color: black;
+  background-color: #2563eb;
+  color: white;
   border: none;
   border-radius: 50%;
   width: 54px;
@@ -330,8 +330,8 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: #fbbf24;
-  color: black;
+  background-color: #2563eb;
+  color: white;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -417,8 +417,8 @@
   aspect-ratio: 1;
   border-radius: 36px;
   overflow: hidden;
-  border: 4px solid #fbbf24;
-  box-shadow: 0 10px 40px rgba(251, 191, 36, 0.3);
+  border: 4px solid #2563eb;
+  box-shadow: 0 10px 40px rgba(37, 99, 235, 0.3);
 }
 
 .received-widget img {
@@ -466,7 +466,7 @@
 }
 .filter-btn.active {
   transform: scale(1.2);
-  border-color: #fbbf24;
+  border-color: #2563eb;
 }
 
 /* FB Style Post */
@@ -493,7 +493,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  color: black;
+  color: white;
   display: flex;
   justify-content: center;
   align-items: center;

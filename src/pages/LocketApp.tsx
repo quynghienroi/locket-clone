@@ -68,7 +68,7 @@ export default function LocketApp() {
   const [eventReward, setEventReward] = useState(50);
   
   // New features
-  const [themeColor, setThemeColor] = useState('#fbbf24');
+  const [themeColor, setThemeColor] = useState('#2563eb');
   const [statusNote, setStatusNote] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [cameraFilter, setCameraFilter] = useState('none');
@@ -610,7 +610,7 @@ export default function LocketApp() {
               )}
               {feed.map(photo => {
                 // Determine if photo has custom sender props
-                const sColor = (photo as any).senderColor || '#fbbf24';
+                const sColor = (photo as any).senderColor || '#2563eb';
                 const sNote = (photo as any).senderNote || '';
                 return (
                 <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
@@ -667,7 +667,7 @@ export default function LocketApp() {
                   <span style={{ fontSize: '0.9rem', color: '#a1a1aa' }}>Reward PTS:</span>
                   <input type="number" value={eventReward} onChange={e => setEventReward(Number(e.target.value))} min={10} max={500} style={{ width: '80px', padding: '4px 8px', borderRadius: '8px', border: '1px solid #3f3f46', background: '#27272a', color: 'white' }} />
                 </div>
-                <button type="submit" style={{ width: '100%', background: '#fbbf24', border: 'none', color: 'black', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Post Event</button>
+                <button type="submit" style={{ width: '100%', background: '#2563eb', border: 'none', color: 'white', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Post Event</button>
               </form>
             )}
 
@@ -684,14 +684,14 @@ export default function LocketApp() {
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                       <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>{event.title}</h3>
-                      <span style={{ background: themeColor, color: 'black', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                      <span style={{ background: themeColor, color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
                         +{event.pointsReward} pts
                       </span>
                     </div>
                     <p style={{ color: '#a1a1aa', fontSize: '0.9rem', marginBottom: '12px', lineHeight: 1.4 }}>{event.description}</p>
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ color: '#fbbf24', fontSize: '0.8rem' }}>
+                      <div style={{ color: '#3b82f6', fontSize: '0.8rem' }}>
                         📅 {new Date(event.date).toLocaleDateString()}
                       </div>
                       <div style={{ color: '#666', fontSize: '0.8rem' }}>
@@ -794,8 +794,8 @@ export default function LocketApp() {
                       {(repo.language || repo.stars !== undefined) && (
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '8px' }}>
                           {repo.language && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#fbbf24' }}>
-                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }}></span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#3b82f6' }}>
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }}></span>
                               {repo.language}
                             </div>
                           )}
@@ -887,7 +887,7 @@ export default function LocketApp() {
         <div className={`received-popup ${receivedPhoto ? 'show' : ''}`}>
           {receivedPhoto && (
             <>
-              <h3 style={{ color: (receivedPhoto as any).senderColor || '#fbbf24', marginBottom: '1rem', letterSpacing: '1px' }}>NEW LOCKET</h3>
+              <h3 style={{ color: (receivedPhoto as any).senderColor || '#2563eb', marginBottom: '1rem', letterSpacing: '1px' }}>NEW LOCKET</h3>
               <div className="received-widget">
                 <img src={receivedPhoto.photoBase64} alt="Received from friend" />
               </div>
@@ -924,7 +924,7 @@ export default function LocketApp() {
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Theme Color</label>
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  {['#fbbf24', '#06b6d4', '#ec4899', '#8b5cf6', '#10b981', '#f97316', '#ff4d4f'].map(color => (
+                  {['#2563eb', '#06b6d4', '#ec4899', '#8b5cf6', '#10b981', '#f97316', '#ff4d4f'].map(color => (
                     <div 
                       key={color} 
                       onClick={() => setThemeColor(color)}

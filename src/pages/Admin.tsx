@@ -14,7 +14,7 @@ import '../App.css';
 
 // Mock Data
 const recentActivity = [
-  { id: 1, user: 'Alex', action: 'shared a photo with', target: 'Sarah', time: '2 mins ago', color: '#fbbf24' },
+  { id: 1, user: 'Alex', action: 'shared a photo with', target: 'Sarah', time: '2 mins ago', color: '#2563eb' },
   { id: 2, user: 'John', action: 'added a new friend', target: 'Mike', time: '15 mins ago', color: '#10b981' },
 ];
 
@@ -119,7 +119,7 @@ function App() {
             <div className="metric-card animate-fade-in" style={{ animationDelay: '0.1s' }}>
               <div className="metric-header">
                 <span>Photos Shared</span>
-                <Camera size={20} color="#fbbf24" />
+                <Camera size={20} color="#2563eb" />
               </div>
               <div className="metric-value">1.2M</div>
               <div className="metric-trend trend-up">
@@ -193,7 +193,7 @@ function App() {
                     marginTop: '8px', 
                     padding: '12px', 
                     borderRadius: '8px', 
-                    background: '#fbbf24', 
+                    background: '#2563eb', 
                     color: 'black', 
                     fontWeight: 'bold', 
                     border: 'none', 
