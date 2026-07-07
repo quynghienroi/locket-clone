@@ -95,6 +95,8 @@ export default function LocketApp() {
   const [cameraFilter, setCameraFilter] = useState('none');
   const [showNoteChat, setShowNoteChat] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [activeTab, setActiveTab] = useState(1);
@@ -396,6 +398,19 @@ export default function LocketApp() {
       if (container) {
         container.scrollTo({ left: container.clientWidth * 2, behavior: 'smooth' });
       }
+    }
+  };
+
+  const handleNoteClick = (previewUrl: string | undefined) => {
+    if (!previewUrl) return;
+    if (playingAudio === previewUrl) {
+      audioRef.current?.pause();
+      setPlayingAudio(null);
+    } else {
+      setPlayingAudio(previewUrl);
+      setTimeout(() => {
+        audioRef.current?.play().catch(e => console.error(e));
+      }, 50);
     }
   };
 
@@ -708,31 +723,42 @@ export default function LocketApp() {
               {feed.length === 0 && (
                 <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No photos in feed yet.</p>
               )}
-              {feed.map(photo => {
-                // Determine if photo has custom sender props
-                const sColor = (photo as any).senderColor || '#2563eb';
-                const sNote = (photo as any).senderNote || '';
-                const sMusic = (photo as any).senderMusic || null;
-                return (
-                <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
-                  <div className="fb-post-header">
-                    <div className="fb-avatar-container">
-                      {(sNote || sMusic) && (
-                        <div className={`avatar-note-bubble note-emotion-${getEmotion(sNote)}`}>
-                          {sNote && <div style={{marginBottom: sMusic ? '4px' : '0'}}>{sNote}</div>}
-                          {sMusic && (
-                            <div className="avatar-music-player">
-                              <div style={{fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px'}}>
-                                <span className="music-icon-spin">🎵</span>
-                                <div className="marquee" style={{maxWidth: '120px'}}><span>{sMusic.title} - {sMusic.artist}</span></div>
+              {(() => {
+                const senderPhotoCount: Record<string, number> = {};
+                return feed.map(photo => {
+                  // Determine if photo has custom sender props
+                  const sColor = (photo as any).senderColor || '#2563eb';
+                  const sNote = (photo as any).senderNote || '';
+                  const sMusic = (photo as any).senderMusic || null;
+                  
+                  const count = senderPhotoCount[photo.sender] || 0;
+                  senderPhotoCount[photo.sender] = count + 1;
+                  const showNote = count < 3 && (sNote || sMusic);
+
+                  return (
+                  <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
+                    <div className="fb-post-header">
+                      <div className="fb-avatar-container">
+                        {showNote ? (
+                          <div 
+                            className={`avatar-note-bubble note-emotion-${getEmotion(sNote)}`}
+                            onClick={() => handleNoteClick(sMusic?.previewUrl)}
+                            style={{ cursor: sMusic ? 'pointer' : 'default' }}
+                          >
+                            {sNote && <div style={{marginBottom: sMusic ? '4px' : '0'}}>{sNote}</div>}
+                            {sMusic && (
+                              <div className="avatar-music-player">
+                                <div style={{fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                                  <span className={playingAudio === sMusic.previewUrl ? 'music-icon-spin' : ''}>🎵</span>
+                                  <div className="marquee" style={{maxWidth: '120px'}}><span>{sMusic.title} - {sMusic.artist}</span></div>
+                                </div>
+                                {playingAudio === sMusic.previewUrl && <div style={{fontSize:'0.6rem', color:'#ff1493', marginTop:'2px', textAlign:'center'}}>Đang phát...</div>}
                               </div>
-                              <audio src={sMusic.previewUrl} controls style={{height: '25px', width: '130px', marginTop: '5px'}}/>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <div className="fb-avatar" style={{ backgroundColor: sColor }}>{photo.sender.charAt(0).toUpperCase()}</div>
-                    </div>
+                            )}
+                          </div>
+                        ) : null}
+                        <div className="fb-avatar" style={{ backgroundColor: sColor }}>{photo.sender.charAt(0).toUpperCase()}</div>
+                      </div>
                     <div className="fb-meta">
                       <span className="fb-sender" style={{ color: sColor }}>{photo.sender}</span>
                       <span className="fb-time">Just now</span>
@@ -763,7 +789,9 @@ export default function LocketApp() {
                     </div>
                   </div>
                 </div>
-              )})}
+              );
+            });
+          })()}
             </div>
           </div>
 
@@ -1039,6 +1067,9 @@ export default function LocketApp() {
 
       </div>
       
+      {/* Hidden global audio player for notes */}
+      <audio ref={audioRef} src={playingAudio || ''} onEnded={() => setPlayingAudio(null)} />
+
       {/* Floating Action Button for ÁDUUUU Note Chat */}
       {userName && (
         <button 
