@@ -5,14 +5,18 @@ import { RichMediaEmbed } from '../components/RichMediaEmbed';
 import { NoteChat } from '../components/NoteChat';
 import '../Locket.css';
 
-const getEmotion = (caption: string) => {
-  if (!caption) return 'default';
-  const lower = caption.toLowerCase();
+const getEmotion = (caption: string, music?: any) => {
+  let textToAnalyze = caption || '';
+  if (music && music.title) {
+    textToAnalyze += ' ' + music.title;
+  }
+  if (!textToAnalyze.trim()) return 'default';
+  const lower = textToAnalyze.toLowerCase();
   
   const fireWords = ['tức', 'giận', 'ghét', 'bực', 'cáu', 'cay', 'điên', 'cháy', 'lửa', 'đù', 'đệt'];
   if (fireWords.some(w => lower.includes(w))) return 'fire';
   
-  const thunderWords = ['buồn', 'chán', 'tồi tệ', 'khóc', 'đau', 'mệt', 'nản', 'thất vọng', 'xui'];
+  const thunderWords = ['buồn', 'chán', 'tồi tệ', 'khóc', 'đau', 'mệt', 'nản', 'thất vọng', 'xui', 'sầu'];
   if (thunderWords.some(w => lower.includes(w))) return 'thunder';
   
   const loveWords = ['yêu', 'thương', 'nhớ', 'thích', 'tình', 'crush', 'cưng', 'bé', 'tuyệt', 'đẹp'];
@@ -741,7 +745,7 @@ export default function LocketApp() {
                       <div className="fb-avatar-container">
                         {showNote ? (
                           <div 
-                            className={`avatar-note-bubble note-emotion-${getEmotion(sNote)}`}
+                            className={`avatar-note-bubble note-emotion-${getEmotion(sNote, sMusic)}`}
                             onClick={() => handleNoteClick(sMusic?.previewUrl)}
                             style={{ cursor: sMusic ? 'pointer' : 'default' }}
                           >
