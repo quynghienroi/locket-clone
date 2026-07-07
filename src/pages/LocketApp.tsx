@@ -94,6 +94,7 @@ export default function LocketApp() {
   const [showSettings, setShowSettings] = useState(false);
   const [cameraFilter, setCameraFilter] = useState('none');
   const [showNoteChat, setShowNoteChat] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [activeTab, setActiveTab] = useState(1);
@@ -109,6 +110,39 @@ export default function LocketApp() {
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
   const [selectedTargets, setSelectedTargets] = useState<string[]>(['ALL']);
+
+  // Chat Head Drag State
+  const [chatHeadPos, setChatHeadPos] = useState({ x: 20, y: 20 }); // Bottom right offset
+  const isDraggingChat = useRef(false);
+  const dragStartPos = useRef({ x: 0, y: 0, initialBottom: 20, initialRight: 20 });
+
+  const handlePointerDownChat = (e: React.PointerEvent) => {
+    isDraggingChat.current = true;
+    dragStartPos.current = {
+      x: e.clientX,
+      y: e.clientY,
+      initialBottom: chatHeadPos.y,
+      initialRight: chatHeadPos.x
+    };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMoveChat = (e: React.PointerEvent) => {
+    if (!isDraggingChat.current) return;
+    const dx = dragStartPos.current.x - e.clientX; // Invert dx for 'right' positioning
+    const dy = dragStartPos.current.y - e.clientY; // Invert dy for 'bottom' positioning
+    
+    // Prevent dragging completely out of screen bounds roughly
+    const newRight = Math.max(0, Math.min(window.innerWidth - 60, dragStartPos.current.initialRight + dx));
+    const newBottom = Math.max(0, Math.min(window.innerHeight - 60, dragStartPos.current.initialBottom + dy));
+    
+    setChatHeadPos({ x: newRight, y: newBottom });
+  };
+
+  const handlePointerUpChat = (e: React.PointerEvent) => {
+    isDraggingChat.current = false;
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+  };
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
@@ -348,7 +382,8 @@ export default function LocketApp() {
   };
 
   const handleSend = () => {
-    if (socket && capturedPhoto) {
+    if (socket && capturedPhoto && !isSending) {
+      setIsSending(true);
       socket.emit('send_photo', {
         targets: selectedTargets,
         photoBase64: capturedPhoto,
@@ -356,6 +391,7 @@ export default function LocketApp() {
         filter: cameraFilter
       });
       setCapturedPhoto(null);
+      setIsSending(false);
       const container = containerRef.current;
       if (container) {
         container.scrollTo({ left: container.clientWidth * 2, behavior: 'smooth' });
@@ -905,7 +941,7 @@ export default function LocketApp() {
               
               <div className="send-actions">
                 <button className="cancel-btn" onClick={() => setCapturedPhoto(null)}>Cancel</button>
-                <button className="send-btn" onClick={handleSend} style={{ backgroundColor: themeColor }}>
+                <button className="send-btn" onClick={handleSend} disabled={isSending} style={{ backgroundColor: isSending ? '#666' : themeColor }}>
                   <ArrowUp size={24} strokeWidth={3} />
                 </button>
               </div>
@@ -1006,11 +1042,20 @@ export default function LocketApp() {
       {/* Floating Action Button for ÁDUUUU Note Chat */}
       {userName && (
         <button 
-          onClick={() => setShowNoteChat(true)}
+          onPointerDown={handlePointerDownChat}
+          onPointerMove={handlePointerMoveChat}
+          onPointerUp={handlePointerUpChat}
+          onClick={(e) => {
+            const dx = dragStartPos.current.x - e.clientX;
+            const dy = dragStartPos.current.y - e.clientY;
+            if (Math.hypot(dx, dy) < 5) {
+              setShowNoteChat(true);
+            }
+          }}
           style={{
             position: 'fixed',
-            bottom: '20px',
-            right: '20px',
+            bottom: `${chatHeadPos.y}px`,
+            right: `${chatHeadPos.x}px`,
             width: '60px',
             height: '60px',
             borderRadius: '50%',
@@ -1022,7 +1067,8 @@ export default function LocketApp() {
             justifyContent: 'center',
             alignItems: 'center',
             cursor: 'pointer',
-            zIndex: 900
+            zIndex: 900,
+            touchAction: 'none' // Prevent scrolling while dragging on mobile
           }}
         >
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>

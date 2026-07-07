@@ -190,6 +190,34 @@ app.get('/api/user/notes', async (req, res) => {
   }
 });
 
+// API: Delete Note (Revoke)
+app.delete('/api/user/note/:id', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ email: decoded.email });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    user.noteHistory = user.noteHistory.filter(n => n._id.toString() !== req.params.id);
+    
+    // Update status to latest note if exists, else empty
+    if (user.noteHistory.length > 0) {
+      const latest = user.noteHistory[user.noteHistory.length - 1];
+      user.statusNote = latest.text || '';
+      user.statusMusic = latest.music || null;
+    } else {
+      user.statusNote = '';
+      user.statusMusic = null;
+    }
+    
+    await user.save();
+    res.json({ success: true, statusNote: user.statusNote, statusMusic: user.statusMusic, noteHistory: user.noteHistory });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete note' });
+  }
+});
+
 // API: Set Username
 app.post('/api/auth/set-username', async (req, res) => {
   const { token, username } = req.body;

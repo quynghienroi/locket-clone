@@ -67,6 +67,22 @@ export const NoteChat = ({ isOpen, onClose, token }: { isOpen: boolean, onClose:
     }
   };
 
+  const handleDeleteNote = async (id: string) => {
+    if (!window.confirm("Bạn có chắc chắn muốn thu hồi (xóa) ghi chú này không?")) return;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/user/note/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessages(data.noteHistory || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -82,19 +98,28 @@ export const NoteChat = ({ isOpen, onClose, token }: { isOpen: boolean, onClose:
             <div style={{textAlign: 'center', color: '#999', marginTop: '2rem'}}>Chưa có ghi chú nào. Gửi ngay!</div>
           )}
           {messages.map((m, i) => (
-            <div key={i} className="note-message" style={{alignSelf: 'flex-end'}}>
-              {m.text && <div className="note-text">{m.text}</div>}
-              {m.music && (
-                <div className="note-music">
-                  <div style={{display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px'}}>
-                    <span>🎵</span>
-                    <strong>{m.music.title}</strong>
-                    <span style={{fontSize: '0.8rem', color: '#eee'}}>- {m.music.artist}</span>
+            <div key={i} className="note-message-wrapper" style={{alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: '10px'}}>
+              <button 
+                onClick={() => handleDeleteNote(m._id)}
+                style={{background: 'transparent', border: 'none', color: '#ff4d4f', cursor: 'pointer', fontSize: '1.2rem', padding: '0'}}
+                title="Thu hồi ghi chú"
+              >
+                &times;
+              </button>
+              <div className="note-message">
+                {m.text && <div className="note-text">{m.text}</div>}
+                {m.music && (
+                  <div className="note-music">
+                    <div style={{display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px'}}>
+                      <span>🎵</span>
+                      <strong>{m.music.title}</strong>
+                      <span style={{fontSize: '0.8rem', color: '#eee'}}>- {m.music.artist}</span>
+                    </div>
+                    <audio controls src={m.music.previewUrl} style={{height: '30px', width: '220px'}}/>
                   </div>
-                  <audio controls src={m.music.previewUrl} style={{height: '30px', width: '220px'}}/>
-                </div>
-              )}
-              <div className="note-time">{new Date(m.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                )}
+                <div className="note-time">{new Date(m.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+              </div>
             </div>
           ))}
           <div ref={endRef} />
