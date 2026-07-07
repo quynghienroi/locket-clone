@@ -678,9 +678,9 @@ export default function LocketApp() {
                 <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
                   <div className="fb-post-header">
                     <div className="fb-avatar-container">
-                      { (photo.caption || sNote) && (
-                        <div className={`avatar-note-bubble note-emotion-${getEmotion(photo.caption || sNote)}`}>
-                          {photo.caption || sNote}
+                      {sNote && (
+                        <div className={`avatar-note-bubble note-emotion-${getEmotion(sNote)}`}>
+                          {sNote}
                         </div>
                       )}
                       <div className="fb-avatar" style={{ backgroundColor: sColor }}>{photo.sender.charAt(0).toUpperCase()}</div>
@@ -698,6 +698,8 @@ export default function LocketApp() {
                       </button>
                     )}
                   </div>
+                  
+                  {photo.caption && <div className="fb-caption">{photo.caption}</div>}
                   <div className="fb-image-container">
                     <img src={photo.photoBase64} alt="Feed" style={{ filter: photo.filter || 'none' }} />
                   </div>
