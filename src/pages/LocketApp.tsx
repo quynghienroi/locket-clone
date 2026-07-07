@@ -451,6 +451,22 @@ export default function LocketApp() {
     }
   };
 
+  const handleCleanDB = async () => {
+    if (!window.confirm("BẠN CÓ CHẮC MUỐN XÓA TẤT CẢ DỮ LIỆU (Sự kiện, Repo, Tài khoản lỗi) NGOẠI TRỪ HÌNH ẢNH KHÔNG?")) return;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/admin/clean-db`);
+      const data = await res.json();
+      if (data.success) {
+        alert("Dọn dẹp thành công! Vui lòng tải lại trang.");
+        window.location.reload();
+      } else {
+        alert("Có lỗi xảy ra: " + data.error);
+      }
+    } catch (err) {
+      alert("Lỗi kết nối");
+    }
+  };
+
   // ---------------- ONBOARDING / AUTH ----------------
   if (!token || !userName) {
     return (
@@ -920,6 +936,12 @@ export default function LocketApp() {
               <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setShowSettings(false)} className="continue-btn" style={{ background: '#333', color: 'white' }}>Cancel</button>
                 <button type="submit" className="continue-btn" style={{ background: themeColor, color: 'black' }}>Save</button>
+              </div>
+
+              <div style={{ marginTop: '2rem', borderTop: '1px solid #333', paddingTop: '1rem', textAlign: 'center' }}>
+                <button type="button" onClick={handleCleanDB} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.8rem', cursor: 'pointer' }}>
+                  🗑️ Xóa Dữ Liệu (Chỉ giữ Hình Ảnh)
+                </button>
               </div>
               
               <button type="button" onClick={handleLogout} style={{ background: 'transparent', color: '#ff4d4f', border: 'none', fontWeight: 'bold', marginTop: '2rem', cursor: 'pointer' }}>

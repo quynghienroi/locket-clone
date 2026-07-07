@@ -382,6 +382,18 @@ app.get('/api/github/proxy', async (req, res) => {
   }
 });
 
+app.get('/api/admin/clean-db', async (req, res) => {
+  try {
+    await Event.deleteMany({});
+    await Repo.deleteMany({});
+    await User.deleteMany({ username: { $exists: false } });
+    await User.updateMany({ themeColor: '#fbbf24' }, { $set: { themeColor: '#2563eb' } });
+    res.json({ success: true, message: 'Database cleaned. Photos and valid users kept.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to clean DB' });
+  }
+});
+
 io.on('connection', async (socket) => {
   try {
     const user = await User.findOne({ email: socket.userEmail });
