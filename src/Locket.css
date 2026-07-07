@@ -543,6 +543,8 @@
 }
 
 .fb-caption {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 500;
   font-size: 1.05rem;
   color: white;
   margin-top: 0.2rem;
