@@ -545,7 +545,8 @@
 .fb-caption {
   font-size: 1.05rem;
   color: white;
-  margin-top: -0.5rem;
+  margin-top: 0.2rem;
+  margin-bottom: 0.2rem;
 }
 
 .fb-image-container {
