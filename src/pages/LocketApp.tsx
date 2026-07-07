@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Image as ImageIcon, Code, Star } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
+import { RichMediaEmbed } from '../components/RichMediaEmbed';
 import '../Locket.css';
 
 interface PhotoData {
@@ -679,10 +680,9 @@ export default function LocketApp() {
                 const isJoined = event.participants.includes(userName || '');
                 return (
                   <div key={event._id} style={{ background: '#27272a', padding: '1rem', borderRadius: '1rem', border: '1px solid #3f3f46' }}>
-                    {event.thumbnailUrl && (
-                      <img src={event.thumbnailUrl} alt="Event Thumbnail" className="event-thumbnail" />
-                    )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <RichMediaEmbed repo={event} />
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', marginTop: '12px' }}>
                       <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>{event.title}</h3>
                       <span style={{ background: themeColor, color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
                         +{event.pointsReward} pts
@@ -775,40 +775,7 @@ export default function LocketApp() {
                     </p>
                   )}
                   
-                  <a href={repo.url} target="_blank" rel="noreferrer" className="link-preview-card">
-                    {repo.imageUrl && (
-                      <img src={repo.imageUrl} alt="Preview" className="link-preview-image" />
-                    )}
-                    <div className="link-preview-content">
-                      <div className="link-preview-domain">{repo.siteName || repo.domain || 'LINK'}</div>
-                      <h3 className="link-preview-title">
-                        {repo.title || repo.name || repo.url}
-                      </h3>
-                      {repo.description && (
-                        <p className="link-preview-desc">
-                          {repo.description}
-                        </p>
-                      )}
-                      
-                      {/* GitHub Specific Stats */}
-                      {(repo.language || repo.stars !== undefined) && (
-                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '8px' }}>
-                          {repo.language && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#3b82f6' }}>
-                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }}></span>
-                              {repo.language}
-                            </div>
-                          )}
-                          {repo.stars !== undefined && repo.stars > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#a1a1aa' }}>
-                              <Star size={14} />
-                              {repo.stars}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </a>
+                  <RichMediaEmbed repo={repo} />
                 </div>
               ))}
             </div>

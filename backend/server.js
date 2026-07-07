@@ -359,6 +359,29 @@ io.use((socket, next) => {
   });
 });
 
+app.get('/api/github/proxy', async (req, res) => {
+  const { path } = req.query;
+  if (!path) return res.status(400).json({ error: 'Missing GitHub API path' });
+  
+  try {
+    const headers = { 'User-Agent': 'Inntech-App' };
+    if (process.env.GITHUB_TOKEN) {
+      headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
+    }
+    
+    const response = await fetch(`https://api.github.com${path}`, { headers });
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'GitHub API Error' });
+    }
+    
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error("GitHub Proxy Error:", err);
+    res.status(500).json({ error: 'Failed to fetch from GitHub' });
+  }
+});
+
 io.on('connection', async (socket) => {
   try {
     const user = await User.findOne({ email: socket.userEmail });
