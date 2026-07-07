@@ -4,6 +4,25 @@ import { io, Socket } from 'socket.io-client';
 import { RichMediaEmbed } from '../components/RichMediaEmbed';
 import '../Locket.css';
 
+const getEmotion = (caption: string) => {
+  if (!caption) return 'default';
+  const lower = caption.toLowerCase();
+  
+  const fireWords = ['tức', 'giận', 'ghét', 'bực', 'cáu', 'cay', 'điên', 'cháy', 'lửa', 'đù', 'đệt'];
+  if (fireWords.some(w => lower.includes(w))) return 'fire';
+  
+  const thunderWords = ['buồn', 'chán', 'tồi tệ', 'khóc', 'đau', 'mệt', 'nản', 'thất vọng', 'xui'];
+  if (thunderWords.some(w => lower.includes(w))) return 'thunder';
+  
+  const loveWords = ['yêu', 'thương', 'nhớ', 'thích', 'tình', 'crush', 'cưng', 'bé', 'tuyệt', 'đẹp'];
+  if (loveWords.some(w => lower.includes(w))) return 'love';
+  
+  const creativeWords = ['sáng tạo', 'thơ', 'hay', 'đỉnh', 'chất', 'ngầu', 'nghệ', 'vui', 'haha', 'hihi'];
+  if (creativeWords.some(w => lower.includes(w))) return 'creative';
+  
+  return 'default';
+};
+
 interface PhotoData {
   id: string;
   sender: string;
@@ -659,7 +678,11 @@ export default function LocketApp() {
                 <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
                   <div className="fb-post-header">
                     <div className="fb-avatar-container">
-                      {sNote && <div className="avatar-note-bubble">{sNote}</div>}
+                      { (photo.caption || sNote) && (
+                        <div className={`avatar-note-bubble note-emotion-${getEmotion(photo.caption || sNote)}`}>
+                          {photo.caption || sNote}
+                        </div>
+                      )}
                       <div className="fb-avatar" style={{ backgroundColor: sColor }}>{photo.sender.charAt(0).toUpperCase()}</div>
                     </div>
                     <div className="fb-meta">
@@ -675,9 +698,6 @@ export default function LocketApp() {
                       </button>
                     )}
                   </div>
-                  
-                  {photo.caption && <div className="fb-caption">{photo.caption}</div>}
-                  
                   <div className="fb-image-container">
                     <img src={photo.photoBase64} alt="Feed" style={{ filter: photo.filter || 'none' }} />
                   </div>
