@@ -600,16 +600,18 @@
 .fb-meta {
   display: flex;
   flex-direction: column;
+  margin-bottom: 4px; /* Align slightly better with avatar */
 }
 
 .fb-sender {
   font-weight: bold;
-  font-size: 0.8rem;
+  font-size: 1.05rem;
 }
 
 .fb-time {
-  font-size: 0.6rem;
+  font-size: 0.8rem;
   color: #888;
+  margin-top: 2px;
 }
 
 .fb-caption {
