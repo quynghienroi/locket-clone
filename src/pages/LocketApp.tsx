@@ -669,7 +669,7 @@ export default function LocketApp() {
                     {photo.sender === userName && (
                       <button 
                         onClick={() => handleDeletePhoto(photo)}
-                        style={{ marginLeft: 'auto', background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', padding: '4px 8px' }}
+                        style={{ marginLeft: 'auto', background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px' }}
                       >
                         Gỡ
                       </button>
