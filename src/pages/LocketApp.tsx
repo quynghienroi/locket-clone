@@ -75,6 +75,7 @@ export default function LocketApp() {
   const [cameraFilter, setCameraFilter] = useState('none');
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [flashEnabled, setFlashEnabled] = useState(false);
+  const [activeTab, setActiveTab] = useState(1);
   const streamRef = useRef<MediaStream | null>(null);
   
   const containerRef = useRef<HTMLDivElement>(null);
@@ -128,7 +129,7 @@ export default function LocketApp() {
         } else {
           setUserName(data.username);
           localStorage.setItem('locket_username', data.username);
-          if (data.themeColor) setThemeColor(data.themeColor);
+          if (data.themeColor) setThemeColor(data.themeColor === '#fbbf24' ? '#2563eb' : data.themeColor);
           if (data.statusNote) setStatusNote(data.statusNote);
         }
       } else {
@@ -181,7 +182,7 @@ export default function LocketApp() {
           const userData = await userRes.json();
           if (userData.success) {
             setUserPoints(userData.points);
-            if (userData.themeColor) setThemeColor(userData.themeColor);
+            if (userData.themeColor) setThemeColor(userData.themeColor === '#fbbf24' ? '#2563eb' : userData.themeColor);
             if (userData.statusNote) setStatusNote(userData.statusNote);
           }
         }
@@ -529,7 +530,18 @@ export default function LocketApp() {
   return (
     <div className="locket-container">
       <div className="mobile-frame">
-        <div className="swipe-container" ref={containerRef}>
+        <div 
+          className="swipe-container" 
+          ref={containerRef}
+          onScroll={() => {
+            if (containerRef.current) {
+              const scrollLeft = containerRef.current.scrollLeft;
+              const width = containerRef.current.clientWidth;
+              const tab = Math.round(scrollLeft / width);
+              if (activeTab !== tab) setActiveTab(tab);
+            }
+          }}
+        >
           
           {/* LEFT SCREEN */}
           <div className="swipe-screen">
@@ -832,19 +844,19 @@ export default function LocketApp() {
         {/* BOTTOM NAVIGATION TAB BAR */}
         {!capturedPhoto && (
           <div className="bottom-nav-bar" style={{ display: 'flex', justifyContent: 'space-around', padding: '12px 0', background: '#000', borderTop: '1px solid #333', position: 'absolute', bottom: 0, width: '100%', zIndex: 10 }}>
-            <button onClick={() => containerRef.current?.scrollTo({left: 0, behavior: 'smooth'})} style={{background:'transparent', border:'none', color:'#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer'}}>
+            <button onClick={() => containerRef.current?.scrollTo({left: 0, behavior: 'smooth'})} style={{background:'transparent', border:'none', color: activeTab === 0 ? themeColor : '#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer', transition: 'color 0.2s'}}>
               <RotateCcw size={20} /> History
             </button>
-            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth, behavior: 'smooth'})} style={{background:'transparent', border:'none', color:'white', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer'}}>
+            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth, behavior: 'smooth'})} style={{background:'transparent', border:'none', color: activeTab === 1 ? themeColor : '#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer', transition: 'color 0.2s'}}>
               <CameraIcon size={20} /> Camera
             </button>
-            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth * 2, behavior: 'smooth'})} style={{background:'transparent', border:'none', color:'#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer'}}>
+            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth * 2, behavior: 'smooth'})} style={{background:'transparent', border:'none', color: activeTab === 2 ? themeColor : '#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer', transition: 'color 0.2s'}}>
               <ImageIcon size={20} /> Feed
             </button>
-            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth * 3, behavior: 'smooth'})} style={{background:'transparent', border:'none', color:'#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer'}}>
+            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth * 3, behavior: 'smooth'})} style={{background:'transparent', border:'none', color: activeTab === 3 ? themeColor : '#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer', transition: 'color 0.2s'}}>
               <Star size={20} /> Events
             </button>
-            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth * 4, behavior: 'smooth'})} style={{background:'transparent', border:'none', color:'#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer'}}>
+            <button onClick={() => containerRef.current?.scrollTo({left: containerRef.current.clientWidth * 4, behavior: 'smooth'})} style={{background:'transparent', border:'none', color: activeTab === 4 ? themeColor : '#a1a1aa', fontSize:'10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor: 'pointer', transition: 'color 0.2s'}}>
               <Code size={20} /> Repos
             </button>
           </div>
