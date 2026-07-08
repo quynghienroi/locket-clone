@@ -11,19 +11,33 @@ const broadcastFeed = async (Photo, User, io) => {
     userMap[u.username] = { note: u.statusNote, color: u.themeColor, music }; 
   });
   
-  const globalFeed = latestPhotos.map(p => ({
-    id: p._id.toString(),
-    sender: p.sender,
-    targets: p.targets,
-    photoBase64: p.photoBase64,
-    caption: p.caption,
-    filter: p.filter || 'none',
-    reactions: p.reactions ? Object.fromEntries(p.reactions) : {},
-    timestamp: p.createdAt,
-    senderNote: userMap[p.sender]?.note || '',
-    senderColor: userMap[p.sender]?.color || '#fbbf24', 
-    senderMusic: userMap[p.sender]?.music || null
-  }));
-  io.emit('feed_updated', globalFeed);
+  try {
+    const globalFeed = latestPhotos.map(p => {
+      let reactionsObj = {};
+      if (p.reactions) {
+        if (p.reactions instanceof Map) {
+          reactionsObj = Object.fromEntries(p.reactions);
+        } else {
+          reactionsObj = p.reactions;
+        }
+      }
+      return {
+        id: p._id.toString(),
+        sender: p.sender,
+        targets: p.targets,
+        photoBase64: p.photoBase64,
+        caption: p.caption,
+        filter: p.filter || 'none',
+        reactions: reactionsObj,
+        timestamp: p.createdAt,
+        senderNote: userMap[p.sender]?.note || '',
+        senderColor: userMap[p.sender]?.color || '#fbbf24', 
+        senderMusic: userMap[p.sender]?.music || null
+      };
+    });
+    io.emit('feed_updated', globalFeed);
+  } catch (err) {
+    console.error("broadcastFeed error:", err);
+  }
 };
 module.exports = broadcastFeed;
