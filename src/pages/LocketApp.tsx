@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Image as ImageIcon, Code, Star } from 'lucide-react';
+import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Image as ImageIcon, Code, Star, MessageCircle } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { RichMediaEmbed } from '../components/RichMediaEmbed';
-import { NoteChat } from '../components/NoteChat';
+import { MessengerChat } from '../components/MessengerChat';
 import { LandscapeFeed } from '../components/LandscapeFeed';
 import '../Locket.css';
 import '../Landscape.css';
@@ -99,7 +99,7 @@ export default function LocketApp() {
   const [statusNote, setStatusNote] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [cameraFilter, setCameraFilter] = useState('none');
-  const [showNoteChat, setShowNoteChat] = useState(false);
+  const [showMessengerChat, setShowMessengerChat] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -1111,6 +1111,9 @@ export default function LocketApp() {
               {receivedPhoto.caption && (
                 <div style={{marginTop: '1rem', fontSize: '1.2rem', fontStyle: 'italic'}}>{receivedPhoto.caption}</div>
               )}
+              <button className="fab-item" onClick={() => setShowMessengerChat(true)}>
+                <MessageCircle size={20} />
+              </button>
               <button className="close-popup-btn" onClick={() => setReceivedPhoto(null)}>
                 Awesome!
               </button>
@@ -1171,7 +1174,7 @@ export default function LocketApp() {
       {/* Hidden global audio player for notes */}
       <audio ref={audioRef} src={playingAudio || ''} onEnded={() => setPlayingAudio(null)} />
 
-      {/* Floating Action Button for ÁDUUUU Note Chat */}
+      {/* Floating Action Button for Messenger Chat */}
       {userName && (
         <button 
           onPointerDown={handlePointerDownChat}
@@ -1181,7 +1184,7 @@ export default function LocketApp() {
             const dx = dragStartPos.current.x - e.clientX;
             const dy = dragStartPos.current.y - e.clientY;
             if (Math.hypot(dx, dy) < 5) {
-              setShowNoteChat(true);
+              setShowMessengerChat(true);
             }
           }}
           style={{
@@ -1207,11 +1210,13 @@ export default function LocketApp() {
         </button>
       )}
 
-      {showNoteChat && (
-        <NoteChat 
-          isOpen={showNoteChat} 
-          onClose={() => setShowNoteChat(false)} 
+      {/* MessengerChat Overlay */}
+      {showMessengerChat && token && userName && (
+        <MessengerChat 
+          isOpen={showMessengerChat} 
+          onClose={() => setShowMessengerChat(false)} 
           token={token} 
+          currentUser={userName} 
         />
       )}
 

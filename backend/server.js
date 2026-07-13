@@ -482,7 +482,46 @@ io.on('connection', async (socket) => {
           await broadcastFeed(supabase, io);
         }
       } catch (err) {
-        console.error("Error adding reaction:", err);
+        console.error("add_reaction error:", err);
+      }
+    });
+
+    socket.on('join_chat', async (receiver) => {
+      try {
+        let query = supabase.from('messages').select('*').order('created_at', { ascending: true });
+        
+        if (receiver === 'global') {
+          query = query.eq('receiver', 'global');
+        } else {
+          // 1-on-1 chat history
+          query = query.or(`and(sender.eq.${username},receiver.eq.${receiver}),and(sender.eq.${receiver},receiver.eq.${username})`);
+        }
+        
+        const { data: history } = await query;
+        if (history) {
+          socket.emit('chat_history', history);
+        }
+        socket.join(receiver === 'global' ? 'chat_global' : [username, receiver].sort().join('_'));
+      } catch (err) {
+        console.error("join_chat error:", err);
+      }
+    });
+
+    socket.on('send_chat_message', async (data) => {
+      try {
+        const { receiver, text } = data;
+        const { data: newMsg, error } = await supabase.from('messages').insert([{
+          sender: username,
+          receiver,
+          text
+        }]).select().single();
+        
+        if (!error && newMsg) {
+          const roomName = receiver === 'global' ? 'chat_global' : [username, receiver].sort().join('_');
+          io.to(roomName).emit('chat_message', newMsg);
+        }
+      } catch (err) {
+        console.error("send_chat_message error:", err);
       }
     });
 
