@@ -1,12 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Image as ImageIcon, Code, Star, MessageCircle } from 'lucide-react';
+import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Image as ImageIcon, Code, Star } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { RichMediaEmbed } from '../components/RichMediaEmbed';
-import { MessengerChat } from '../components/MessengerChat';
 import { NoteChat } from '../components/NoteChat';
-import { LandscapeFeed } from '../components/LandscapeFeed';
 import '../Locket.css';
-import '../Landscape.css';
 
 const getEmotion = (caption: string, music?: any) => {
   let textToAnalyze = caption || '';
@@ -98,12 +95,8 @@ export default function LocketApp() {
   // New features
   const [themeColor, setThemeColor] = useState('#2563eb');
   const [statusNote, setStatusNote] = useState('');
-  const [statusMusic, setStatusMusic] = useState<any>(null);
-  const [musicQuery, setMusicQuery] = useState('');
-  const [musicResults, setMusicResults] = useState<any[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [cameraFilter, setCameraFilter] = useState('none');
-  const [showMessengerChat, setShowMessengerChat] = useState(false);
   const [showNoteChat, setShowNoteChat] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
@@ -114,13 +107,6 @@ export default function LocketApp() {
   const streamRef = useRef<MediaStream | null>(null);
   
   const [photoToSave, setPhotoToSave] = useState<PhotoData | null>(null);
-  const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
-
-  useEffect(() => {
-    const handleResize = () => setIsLandscape(window.innerWidth > window.innerHeight);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const centerScreenRef = useRef<HTMLDivElement>(null);
@@ -319,10 +305,6 @@ export default function LocketApp() {
       });
       setSocket(newSocket);
 
-      newSocket.on('error_msg', (msg: string) => {
-        alert("System Error: " + msg);
-      });
-
       newSocket.on('feed_updated', (updatedFeed: PhotoData[]) => {
         setFeed(updatedFeed);
         const newFriends = new Set<string>();
@@ -412,25 +394,8 @@ export default function LocketApp() {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      
-      // Resize to a maximum of 800px width or height
-      const MAX_DIM = 800;
-      let targetWidth = video.videoWidth;
-      let targetHeight = video.videoHeight;
-      if (targetWidth > targetHeight) {
-        if (targetWidth > MAX_DIM) {
-          targetHeight *= MAX_DIM / targetWidth;
-          targetWidth = MAX_DIM;
-        }
-      } else {
-        if (targetHeight > MAX_DIM) {
-          targetWidth *= MAX_DIM / targetHeight;
-          targetHeight = MAX_DIM;
-        }
-      }
-      
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         if (facingMode === 'user') {
@@ -596,7 +561,7 @@ export default function LocketApp() {
       const res = await fetch(`${BACKEND_URL}/api/user/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ themeColor, statusNote, statusMusic })
+        body: JSON.stringify({ themeColor, statusNote })
       });
       const data = await res.json();
       if (data.success) {
@@ -604,21 +569,6 @@ export default function LocketApp() {
       }
     } catch (err) {
       alert("Error saving settings");
-    }
-  };
-
-  const searchMusic = async (q: string) => {
-    setMusicQuery(q);
-    if (q.length < 3) {
-      setMusicResults([]);
-      return;
-    }
-    try {
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=5`);
-      const data = await res.json();
-      setMusicResults(data.results || []);
-    } catch (err) {
-      console.error(err);
     }
   };
 
@@ -806,101 +756,89 @@ export default function LocketApp() {
             </footer>
           </div>
 
-          {/* RIGHT SCREEN (FEED) */}
-          <div className="swipe-screen" style={{ overflowY: 'auto' }}>
-            {isLandscape ? (
-              <LandscapeFeed 
-                feed={feed} 
-                userName={userName} 
-                themeColor={themeColor} 
-                onReaction={handleAddReaction} 
-                onDelete={handleDeletePhoto} 
-              />
-            ) : (
-              <>
-                <div className="screen-header">Feed</div>
-                <div className="feed-container">
-                  {feed.length === 0 && (
-                    <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No photos in feed yet.</p>
-                  )}
-                  {(() => {
-                    const senderPhotoCount: Record<string, number> = {};
-                    return feed.map(photo => {
-                      // Determine if photo has custom sender props
-                      const sColor = (photo as any).senderColor || '#2563eb';
-                      const sNote = (photo as any).senderNote || '';
-                      const sMusic = (photo as any).senderMusic || null;
-                      
-                      const count = senderPhotoCount[photo.sender] || 0;
-                      senderPhotoCount[photo.sender] = count + 1;
-                      const showNote = count < 3 && (sNote || sMusic);
-                      const emotion = getEmotion(sNote, sMusic);
+          {/* RIGHT SCREEN */}
+          <div className="swipe-screen">
+            <div className="screen-header">Feed</div>
+            <div className="feed-container">
+              {feed.length === 0 && (
+                <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No photos in feed yet.</p>
+              )}
+              {(() => {
+                const senderPhotoCount: Record<string, number> = {};
+                return feed.map(photo => {
+                  // Determine if photo has custom sender props
+                  const sColor = (photo as any).senderColor || '#2563eb';
+                  const sNote = (photo as any).senderNote || '';
+                  const sMusic = (photo as any).senderMusic || null;
+                  
+                  const count = senderPhotoCount[photo.sender] || 0;
+                  senderPhotoCount[photo.sender] = count + 1;
+                  const showNote = count < 3 && (sNote || sMusic);
+                  const emotion = getEmotion(sNote, sMusic);
 
-                      return (
-                      <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
-                        <div className="fb-post-header">
-                          <div className="fb-avatar-container">
-                            {showNote ? (
-                              <div 
-                                className={`avatar-note-bubble note-emotion-${emotion}`}
-                                onClick={() => handleNoteClick(sMusic?.previewUrl)}
-                                style={{ cursor: sMusic ? 'pointer' : 'default', overflow: 'visible' }}
-                              >
-                                {emotion === 'fire' && <div className="particle particle-fire">🔥</div>}
-                                {emotion === 'thunder' && <><div className="particle particle-rain-1">💧</div><div className="particle particle-rain-2">💧</div></>}
-                                {emotion === 'love' && <><div className="particle particle-love-1">❤️</div><div className="particle particle-love-2">💕</div></>}
-                                {emotion === 'creative' && <><div className="particle particle-creative-1">✨</div><div className="particle particle-creative-2">💡</div></>}
-                                
-                                {sNote && <div style={{marginBottom: sMusic ? '4px' : '0', position: 'relative', zIndex: 2}}>{sNote}</div>}
-                                {sMusic && (
-                                  <div className="avatar-music-player" style={{ position: 'relative', zIndex: 2 }}>
-                                    <div style={{fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px'}}>
-                                      <span className={playingAudio === sMusic.previewUrl ? 'music-icon-spin' : ''}>🎵</span>
-                                      <div className="marquee" style={{maxWidth: '120px'}}><span>{sMusic.title} - {sMusic.artist}</span></div>
-                                    </div>
-                                    {playingAudio === sMusic.previewUrl && <div style={{fontSize:'0.6rem', color:'#ff1493', marginTop:'2px', textAlign:'center'}}>Đang phát...</div>}
-                                  </div>
-                                )}
-                              </div>
-                            ) : null}
-                            <div className="fb-avatar" style={{ backgroundColor: sColor }}>{photo.sender.charAt(0).toUpperCase()}</div>
-                          </div>
-                        <div className="fb-meta">
-                          <span className="fb-sender" style={{ color: sColor }}>{photo.sender}</span>
-                          <span className="fb-time">Just now</span>
-                        </div>
-                        {photo.sender === userName && (
-                          <button 
-                            onClick={() => handleDeletePhoto(photo)}
-                            style={{ marginLeft: 'auto', background: 'rgba(220, 38, 38, 0.2)', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold', padding: '4px 10px' }}
+                  return (
+                  <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
+                    <div className="fb-post-header">
+                      <div className="fb-avatar-container">
+                        {showNote ? (
+                          <div 
+                            className={`avatar-note-bubble note-emotion-${emotion}`}
+                            onClick={() => handleNoteClick(sMusic?.previewUrl)}
+                            style={{ cursor: sMusic ? 'pointer' : 'default', overflow: 'visible' }}
                           >
-                            Gỡ bài
-                          </button>
-                        )}
+                            {emotion === 'fire' && <div className="particle particle-fire">🔥</div>}
+                            {emotion === 'thunder' && <><div className="particle particle-rain-1">💧</div><div className="particle particle-rain-2">💧</div></>}
+                            {emotion === 'love' && <><div className="particle particle-love-1">❤️</div><div className="particle particle-love-2">💕</div></>}
+                            {emotion === 'creative' && <><div className="particle particle-creative-1">✨</div><div className="particle particle-creative-2">💡</div></>}
+                            
+                            {sNote && <div style={{marginBottom: sMusic ? '4px' : '0', position: 'relative', zIndex: 2}}>{sNote}</div>}
+                            {sMusic && (
+                              <div className="avatar-music-player" style={{ position: 'relative', zIndex: 2 }}>
+                                <div style={{fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                                  <span className={playingAudio === sMusic.previewUrl ? 'music-icon-spin' : ''}>🎵</span>
+                                  <div className="marquee" style={{maxWidth: '120px'}}><span>{sMusic.title} - {sMusic.artist}</span></div>
+                                </div>
+                                {playingAudio === sMusic.previewUrl && <div style={{fontSize:'0.6rem', color:'#ff1493', marginTop:'2px', textAlign:'center'}}>Đang phát...</div>}
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+                        <div className="fb-avatar" style={{ backgroundColor: sColor }}>{photo.sender.charAt(0).toUpperCase()}</div>
                       </div>
-                      
-                      {photo.caption && <div className="fb-caption">{photo.caption}</div>}
-                      <div className="fb-image-container">
-                        <img src={photo.photoBase64} alt="Feed" style={{ filter: photo.filter || 'none' }} />
-                      </div>
-                      
-                      <div className="fb-reactions">
-                        <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '❤️')}>❤️</button>
-                        <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '😂')}>😂</button>
-                        <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '😮')}>😮</button>
-                        <div style={{marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
-                          {Object.entries(photo.reactions).map(([user, emoji]) => (
-                            <span key={user} title={user}>{emoji as string}</span>
-                          ))}
-                        </div>
-                      </div>
+                    <div className="fb-meta">
+                      <span className="fb-sender" style={{ color: sColor }}>{photo.sender}</span>
+                      <span className="fb-time">Just now</span>
                     </div>
-                  );
-                });
-              })()}
+                    {photo.sender === userName && (
+                      <button 
+                        onClick={() => handleDeletePhoto(photo)}
+                        style={{ marginLeft: 'auto', background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px' }}
+                      >
+                        Gỡ
+                      </button>
+                    )}
+                  </div>
+                  
+                  {photo.caption && <div className="fb-caption">{photo.caption}</div>}
+                  <div className="fb-image-container">
+                    <img src={photo.photoBase64} alt="Feed" style={{ filter: photo.filter || 'none' }} />
+                  </div>
+                  
+                  <div className="fb-reactions">
+                    <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '❤️')}>❤️</button>
+                    <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '😂')}>😂</button>
+                    <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '😮')}>😮</button>
+                    <div style={{marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                      {Object.entries(photo.reactions).map(([user, emoji]) => (
+                        <span key={user} title={user}>{emoji}</span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </>
-            )}
+              );
+            });
+          })()}
+            </div>
           </div>
 
           {/* SCREEN 4: CLUB EVENTS */}
@@ -935,18 +873,18 @@ export default function LocketApp() {
               {events.map(event => {
                 const isJoined = event.participants.includes(userName || '');
                 return (
-                  <div key={event._id} className="glass-panel" style={{ padding: '1.2rem', borderRadius: '24px' }}>
+                  <div key={event._id} style={{ background: '#27272a', padding: '1rem', borderRadius: '1rem', border: '1px solid #3f3f46' }}>
                     <RichMediaEmbed repo={event} />
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', marginTop: '12px' }}>
                       <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {event.title}
-                        <div className="kebab-dropdown">
-                          <button className="kebab-btn">•••</button>
-                          <div className="kebab-menu">
-                            <button className="kebab-item" onClick={() => handleDeleteEvent(event._id)}>Gỡ Event</button>
-                          </div>
-                        </div>
+                        <button 
+                          onClick={() => handleDeleteEvent(event._id)}
+                          style={{ background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px' }}
+                        >
+                          Gỡ
+                        </button>
                       </h3>
                       <span style={{ background: themeColor, color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
                         +{event.pointsReward} pts
@@ -1025,7 +963,7 @@ export default function LocketApp() {
                 <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No links shared yet.</p>
               )}
               {repos.map(repo => (
-                <div key={repo._id} className="glass-panel" style={{ padding: '1.2rem', borderRadius: '24px' }}>
+                <div key={repo._id} style={{ background: '#27272a', padding: '1rem', borderRadius: '1rem', border: '1px solid #3f3f46' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                     <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: themeColor, color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px' }}>
                       {repo.sender.charAt(0).toUpperCase()}
@@ -1033,12 +971,12 @@ export default function LocketApp() {
                     <span style={{ color: themeColor, fontSize: '0.8rem', fontWeight: 'bold' }}>{repo.sender} shared a link:</span>
                     
                     {repo.sender === userName && (
-                      <div className="kebab-dropdown">
-                        <button className="kebab-btn">•••</button>
-                        <div className="kebab-menu">
-                          <button className="kebab-item" onClick={() => handleDeleteRepo(repo._id)}>Gỡ Link</button>
-                        </div>
-                      </div>
+                      <button 
+                        onClick={() => handleDeleteRepo(repo._id)}
+                        style={{ marginLeft: 'auto', background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px' }}
+                      >
+                        Gỡ
+                      </button>
                     )}
                   </div>
                   
@@ -1135,9 +1073,6 @@ export default function LocketApp() {
               {receivedPhoto.caption && (
                 <div style={{marginTop: '1rem', fontSize: '1.2rem', fontStyle: 'italic'}}>{receivedPhoto.caption}</div>
               )}
-              <button className="fab-item" onClick={() => setShowMessengerChat(true)}>
-                <MessageCircle size={20} />
-              </button>
               <button className="close-popup-btn" onClick={() => setReceivedPhoto(null)}>
                 Awesome!
               </button>
@@ -1181,53 +1116,6 @@ export default function LocketApp() {
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Status Music</label>
-                {statusMusic ? (
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#1f2937', padding:'10px', borderRadius:'8px' }}>
-                    <div style={{ display:'flex', flexDirection:'column' }}>
-                      <span style={{ fontSize:'0.9rem', fontWeight:'bold' }}>{statusMusic.title}</span>
-                      <span style={{ fontSize:'0.75rem', color:'#9ca3af' }}>{statusMusic.artist}</span>
-                    </div>
-                    <button type="button" onClick={() => setStatusMusic(null)} style={{ background:'transparent', border:'none', color:'#dc2626', cursor:'pointer' }}>Remove</button>
-                  </div>
-                ) : (
-                  <div>
-                    <input 
-                      type="text" 
-                      placeholder="Search song..." 
-                      className="name-input"
-                      value={musicQuery}
-                      onChange={(e) => searchMusic(e.target.value)}
-                      style={{ marginBottom: '0.5rem' }}
-                    />
-                    {musicResults.length > 0 && (
-                      <div style={{ background:'#1f2937', borderRadius:'8px', maxHeight:'150px', overflowY:'auto' }}>
-                        {musicResults.map((song: any) => (
-                          <div 
-                            key={song.trackId} 
-                            onClick={() => {
-                              setStatusMusic({
-                                title: song.trackName,
-                                artist: song.artistName,
-                                previewUrl: song.previewUrl,
-                                cover: song.artworkUrl100
-                              });
-                              setMusicQuery('');
-                              setMusicResults([]);
-                            }}
-                            style={{ padding:'10px', borderBottom:'1px solid #374151', cursor:'pointer', display:'flex', flexDirection:'column' }}
-                          >
-                            <span style={{ fontSize:'0.9rem' }}>{song.trackName}</span>
-                            <span style={{ fontSize:'0.75rem', color:'#9ca3af' }}>{song.artistName}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
               <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setShowSettings(false)} className="continue-btn" style={{ background: '#333', color: 'white' }}>Cancel</button>
                 <button type="submit" className="continue-btn" style={{ background: themeColor, color: 'black' }}>Save</button>
@@ -1245,7 +1133,7 @@ export default function LocketApp() {
       {/* Hidden global audio player for notes */}
       <audio ref={audioRef} src={playingAudio || ''} onEnded={() => setPlayingAudio(null)} />
 
-      {/* Floating Action Button for Messenger Chat */}
+      {/* Floating Action Button for ÁDUUUU Note Chat */}
       {userName && (
         <button 
           onPointerDown={handlePointerDownChat}
@@ -1255,60 +1143,33 @@ export default function LocketApp() {
             const dx = dragStartPos.current.x - e.clientX;
             const dy = dragStartPos.current.y - e.clientY;
             if (Math.hypot(dx, dy) < 5) {
-              setShowMessengerChat(true);
+              setShowNoteChat(true);
             }
           }}
           style={{
             position: 'fixed',
             bottom: `${chatHeadPos.y}px`,
             right: `${chatHeadPos.x}px`,
-            width: '60px', height: '60px',
+            width: '60px',
+            height: '60px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            border: '3px solid #fff',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-            display: 'flex', justifyContent: 'center', alignItems: 'center',
-            cursor: 'grab', zIndex: 9999, color: 'white',
+            backgroundColor: themeColor,
+            color: '#000',
+            border: 'none',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'pointer',
+            zIndex: 900,
             touchAction: 'none' // Prevent scrolling while dragging on mobile
-          }}
-        >
-          <MessageCircle size={30} fill="white" />
-        </button>
-      )}
-
-      {/* Floating Action Button for Note Chat (Ghi chú cá nhân) */}
-      {userName && (
-        <button 
-          onClick={() => setShowNoteChat(true)}
-          style={{
-            position: 'fixed',
-            bottom: `80px`,
-            left: `20px`,
-            width: '60px', height: '60px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #10b981, #059669)',
-            border: '3px solid #fff',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-            display: 'flex', justifyContent: 'center', alignItems: 'center',
-            cursor: 'pointer', zIndex: 9998, color: 'white'
           }}
         >
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
         </button>
       )}
 
-      {/* MessengerChat Overlay */}
-      {showMessengerChat && token && userName && (
-        <MessengerChat 
-          isOpen={showMessengerChat} 
-          onClose={() => setShowMessengerChat(false)} 
-          token={token} 
-          currentUser={userName} 
-        />
-      )}
-
-      {/* NoteChat Overlay */}
-      {showNoteChat && token && (
+      {showNoteChat && (
         <NoteChat 
           isOpen={showNoteChat} 
           onClose={() => setShowNoteChat(false)} 
