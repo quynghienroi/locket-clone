@@ -873,7 +873,7 @@ export default function LocketApp() {
               {events.map(event => {
                 const isJoined = event.participants.includes(userName || '');
                 return (
-                  <div key={event._id} style={{ background: '#27272a', padding: '1rem', borderRadius: '1rem', border: '1px solid #3f3f46' }}>
+                  <div key={event._id} className="glass-panel" style={{ padding: '1.2rem', borderRadius: '24px' }}>
                     <RichMediaEmbed repo={event} />
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', marginTop: '12px' }}>
@@ -963,7 +963,7 @@ export default function LocketApp() {
                 <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No links shared yet.</p>
               )}
               {repos.map(repo => (
-                <div key={repo._id} style={{ background: '#27272a', padding: '1rem', borderRadius: '1rem', border: '1px solid #3f3f46' }}>
+                <div key={repo._id} className="glass-panel" style={{ padding: '1.2rem', borderRadius: '24px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                     <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: themeColor, color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px' }}>
                       {repo.sender.charAt(0).toUpperCase()}
