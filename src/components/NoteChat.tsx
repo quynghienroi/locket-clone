@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Send, Music, Search } from 'lucide-react';
 import './NoteChat.css';
 
-const BACKEND_URL = 'https://locket-backend-ybz2.onrender.com';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 export const NoteChat = ({ isOpen, onClose, token }: { isOpen: boolean, onClose: () => void, token: string }) => {
   const [messages, setMessages] = useState<any[]>([]);
@@ -100,7 +100,7 @@ export const NoteChat = ({ isOpen, onClose, token }: { isOpen: boolean, onClose:
           {messages.map((m, i) => (
             <div key={i} className="note-message-wrapper" style={{alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: '10px'}}>
               <button 
-                onClick={() => handleDeleteNote(m._id)}
+                onClick={() => handleDeleteNote(m.id || m._id)}
                 style={{background: 'transparent', border: 'none', color: '#ff4d4f', cursor: 'pointer', fontSize: '1.2rem', padding: '0'}}
                 title="Thu hồi ghi chú"
               >
