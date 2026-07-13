@@ -810,12 +810,12 @@ export default function LocketApp() {
                       <span className="fb-time">Just now</span>
                     </div>
                     {photo.sender === userName && (
-                      <button 
-                        onClick={() => handleDeletePhoto(photo)}
-                        style={{ marginLeft: 'auto', background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px' }}
-                      >
-                        Gỡ
-                      </button>
+                      <div className="kebab-dropdown">
+                        <button className="kebab-btn">•••</button>
+                        <div className="kebab-menu">
+                          <button className="kebab-item" onClick={() => handleDeletePhoto(photo)}>Gỡ bài</button>
+                        </div>
+                      </div>
                     )}
                   </div>
                   
@@ -879,12 +879,12 @@ export default function LocketApp() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', marginTop: '12px' }}>
                       <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {event.title}
-                        <button 
-                          onClick={() => handleDeleteEvent(event._id)}
-                          style={{ background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px' }}
-                        >
-                          Gỡ
-                        </button>
+                        <div className="kebab-dropdown">
+                          <button className="kebab-btn">•••</button>
+                          <div className="kebab-menu">
+                            <button className="kebab-item" onClick={() => handleDeleteEvent(event._id)}>Gỡ Event</button>
+                          </div>
+                        </div>
                       </h3>
                       <span style={{ background: themeColor, color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
                         +{event.pointsReward} pts
@@ -971,12 +971,12 @@ export default function LocketApp() {
                     <span style={{ color: themeColor, fontSize: '0.8rem', fontWeight: 'bold' }}>{repo.sender} shared a link:</span>
                     
                     {repo.sender === userName && (
-                      <button 
-                        onClick={() => handleDeleteRepo(repo._id)}
-                        style={{ marginLeft: 'auto', background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px' }}
-                      >
-                        Gỡ
-                      </button>
+                      <div className="kebab-dropdown">
+                        <button className="kebab-btn">•••</button>
+                        <div className="kebab-menu">
+                          <button className="kebab-item" onClick={() => handleDeleteRepo(repo._id)}>Gỡ Link</button>
+                        </div>
+                      </div>
                     )}
                   </div>
                   

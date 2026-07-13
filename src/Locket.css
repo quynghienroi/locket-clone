@@ -603,11 +603,71 @@
   100% { box-shadow: 0 0 25px #ffeb3b, 0 0 10px #fff; background: linear-gradient(135deg, #ffeb3b, #ffc107); }
 }
 
+/* Glassmorphism Panel */
+.glass-panel {
+  background: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Kebab Dropdown */
+.kebab-dropdown {
+  position: relative;
+  display: inline-block;
+  margin-left: auto;
+}
+.kebab-btn {
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 8px;
+}
+.kebab-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: #27272a;
+  min-width: 120px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  z-index: 100;
+  border-radius: 8px;
+  border: 1px solid #3f3f46;
+  overflow: hidden;
+}
+.kebab-dropdown:hover .kebab-menu, .kebab-dropdown:focus-within .kebab-menu {
+  display: block;
+}
+.kebab-item {
+  color: #ef4444;
+  padding: 10px 16px;
+  display: block;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+.kebab-item:hover {
+  background: #3f3f46;
+}
+
 /* Particle Effects */
 .particle {
   position: absolute;
   pointer-events: none;
   z-index: 10;
+  animation: fadeOutParticle 0.5s ease-in 4.5s forwards;
+}
+
+@keyframes fadeOutParticle {
+  to { opacity: 0; visibility: hidden; }
 }
 .particle-fire {
   top: -15px; right: -10px; font-size: 24px;
