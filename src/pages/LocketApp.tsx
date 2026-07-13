@@ -403,8 +403,25 @@ export default function LocketApp() {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      
+      // Resize to a maximum of 800px width or height
+      const MAX_DIM = 800;
+      let targetWidth = video.videoWidth;
+      let targetHeight = video.videoHeight;
+      if (targetWidth > targetHeight) {
+        if (targetWidth > MAX_DIM) {
+          targetHeight *= MAX_DIM / targetWidth;
+          targetWidth = MAX_DIM;
+        }
+      } else {
+        if (targetHeight > MAX_DIM) {
+          targetWidth *= MAX_DIM / targetHeight;
+          targetHeight = MAX_DIM;
+        }
+      }
+      
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         if (facingMode === 'user') {

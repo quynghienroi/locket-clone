@@ -19,7 +19,8 @@ const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
-  }
+  },
+  maxHttpBufferSize: 1e8 // 100 MB
 });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'locket_super_secret_key';
