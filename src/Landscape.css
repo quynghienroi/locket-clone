@@ -1,0 +1,183 @@
+/* Landscape CSS for Inntech Locket */
+
+@media (orientation: landscape) {
+  /* Override main mobile frame for landscape */
+  .mobile-frame {
+    max-width: 932px !important;
+    max-height: 430px !important;
+    flex-direction: row !important;
+    border-radius: 40px !important;
+    overflow: hidden;
+  }
+
+  /* Camera UI in Landscape */
+  .swipe-screen:has(.locket-footer) {
+    flex-direction: row !important;
+  }
+  
+  .locket-footer {
+    position: absolute !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: 0 !important;
+    width: 120px !important;
+    height: 100% !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    background: rgba(0,0,0,0.5) !important;
+  }
+  
+  .locket-footer > div {
+    flex-direction: column !important;
+    align-items: center !important;
+    padding: 0 !important;
+    gap: 30px !important;
+    margin-bottom: 30px !important;
+  }
+  
+  .live-video {
+    width: calc(100% - 120px) !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 40px 0 0 40px !important;
+  }
+}
+
+/* Landscape Feed Component */
+.landscape-feed-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  display: flex;
+}
+
+.landscape-main-display {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.landscape-main-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(0px); /* Optional: can add a subtle vignette or blur */
+  transition: all 0.3s ease;
+}
+
+/* Make it look harmonious */
+.landscape-main-display::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.landscape-main-overlay {
+  position: absolute;
+  bottom: 30px;
+  right: 40px;
+  z-index: 3;
+  text-align: right;
+}
+
+.landscape-sender-info {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.landscape-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #000;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.landscape-sender-name {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.landscape-caption {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  max-width: 300px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px 15px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+/* Rotary Dial on the LEFT */
+.landscape-rotary-dial {
+  position: absolute;
+  left: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 80%;
+  width: 150px;
+  z-index: 10;
+  perspective: 1000px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.rotary-item {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transform-style: preserve-3d;
+}
+
+.rotary-item.active {
+  border: 3px solid #fff;
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+}
+
+.rotary-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.landscape-feed-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 1.2rem;
+  background: #111;
+}

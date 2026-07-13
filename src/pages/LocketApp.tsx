@@ -3,7 +3,9 @@ import { Camera as CameraIcon, ArrowUp, Zap, RotateCcw, Image as ImageIcon, Code
 import { io, Socket } from 'socket.io-client';
 import { RichMediaEmbed } from '../components/RichMediaEmbed';
 import { NoteChat } from '../components/NoteChat';
+import { LandscapeFeed } from '../components/LandscapeFeed';
 import '../Locket.css';
+import '../Landscape.css';
 
 const getEmotion = (caption: string, music?: any) => {
   let textToAnalyze = caption || '';
@@ -107,6 +109,13 @@ export default function LocketApp() {
   const streamRef = useRef<MediaStream | null>(null);
   
   const [photoToSave, setPhotoToSave] = useState<PhotoData | null>(null);
+  const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
+
+  useEffect(() => {
+    const handleResize = () => setIsLandscape(window.innerWidth > window.innerHeight);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const centerScreenRef = useRef<HTMLDivElement>(null);
@@ -756,89 +765,101 @@ export default function LocketApp() {
             </footer>
           </div>
 
-          {/* RIGHT SCREEN */}
-          <div className="swipe-screen">
-            <div className="screen-header">Feed</div>
-            <div className="feed-container">
-              {feed.length === 0 && (
-                <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No photos in feed yet.</p>
-              )}
-              {(() => {
-                const senderPhotoCount: Record<string, number> = {};
-                return feed.map(photo => {
-                  // Determine if photo has custom sender props
-                  const sColor = (photo as any).senderColor || '#2563eb';
-                  const sNote = (photo as any).senderNote || '';
-                  const sMusic = (photo as any).senderMusic || null;
-                  
-                  const count = senderPhotoCount[photo.sender] || 0;
-                  senderPhotoCount[photo.sender] = count + 1;
-                  const showNote = count < 3 && (sNote || sMusic);
-                  const emotion = getEmotion(sNote, sMusic);
+          {/* RIGHT SCREEN (FEED) */}
+          <div className="swipe-screen" style={{ overflowY: 'auto' }}>
+            {isLandscape ? (
+              <LandscapeFeed 
+                feed={feed} 
+                userName={userName} 
+                themeColor={themeColor} 
+                onReaction={handleAddReaction} 
+                onDelete={handleDeletePhoto} 
+              />
+            ) : (
+              <>
+                <div className="screen-header">Feed</div>
+                <div className="feed-container">
+                  {feed.length === 0 && (
+                    <p style={{textAlign: 'center', color: '#666', marginTop: '2rem'}}>No photos in feed yet.</p>
+                  )}
+                  {(() => {
+                    const senderPhotoCount: Record<string, number> = {};
+                    return feed.map(photo => {
+                      // Determine if photo has custom sender props
+                      const sColor = (photo as any).senderColor || '#2563eb';
+                      const sNote = (photo as any).senderNote || '';
+                      const sMusic = (photo as any).senderMusic || null;
+                      
+                      const count = senderPhotoCount[photo.sender] || 0;
+                      senderPhotoCount[photo.sender] = count + 1;
+                      const showNote = count < 3 && (sNote || sMusic);
+                      const emotion = getEmotion(sNote, sMusic);
 
-                  return (
-                  <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
-                    <div className="fb-post-header">
-                      <div className="fb-avatar-container">
-                        {showNote ? (
-                          <div 
-                            className={`avatar-note-bubble note-emotion-${emotion}`}
-                            onClick={() => handleNoteClick(sMusic?.previewUrl)}
-                            style={{ cursor: sMusic ? 'pointer' : 'default', overflow: 'visible' }}
-                          >
-                            {emotion === 'fire' && <div className="particle particle-fire">🔥</div>}
-                            {emotion === 'thunder' && <><div className="particle particle-rain-1">💧</div><div className="particle particle-rain-2">💧</div></>}
-                            {emotion === 'love' && <><div className="particle particle-love-1">❤️</div><div className="particle particle-love-2">💕</div></>}
-                            {emotion === 'creative' && <><div className="particle particle-creative-1">✨</div><div className="particle particle-creative-2">💡</div></>}
-                            
-                            {sNote && <div style={{marginBottom: sMusic ? '4px' : '0', position: 'relative', zIndex: 2}}>{sNote}</div>}
-                            {sMusic && (
-                              <div className="avatar-music-player" style={{ position: 'relative', zIndex: 2 }}>
-                                <div style={{fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px'}}>
-                                  <span className={playingAudio === sMusic.previewUrl ? 'music-icon-spin' : ''}>🎵</span>
-                                  <div className="marquee" style={{maxWidth: '120px'}}><span>{sMusic.title} - {sMusic.artist}</span></div>
-                                </div>
-                                {playingAudio === sMusic.previewUrl && <div style={{fontSize:'0.6rem', color:'#ff1493', marginTop:'2px', textAlign:'center'}}>Đang phát...</div>}
+                      return (
+                      <div key={photo.id} className="fb-post" style={{ borderTop: `4px solid ${sColor}` }}>
+                        <div className="fb-post-header">
+                          <div className="fb-avatar-container">
+                            {showNote ? (
+                              <div 
+                                className={`avatar-note-bubble note-emotion-${emotion}`}
+                                onClick={() => handleNoteClick(sMusic?.previewUrl)}
+                                style={{ cursor: sMusic ? 'pointer' : 'default', overflow: 'visible' }}
+                              >
+                                {emotion === 'fire' && <div className="particle particle-fire">🔥</div>}
+                                {emotion === 'thunder' && <><div className="particle particle-rain-1">💧</div><div className="particle particle-rain-2">💧</div></>}
+                                {emotion === 'love' && <><div className="particle particle-love-1">❤️</div><div className="particle particle-love-2">💕</div></>}
+                                {emotion === 'creative' && <><div className="particle particle-creative-1">✨</div><div className="particle particle-creative-2">💡</div></>}
+                                
+                                {sNote && <div style={{marginBottom: sMusic ? '4px' : '0', position: 'relative', zIndex: 2}}>{sNote}</div>}
+                                {sMusic && (
+                                  <div className="avatar-music-player" style={{ position: 'relative', zIndex: 2 }}>
+                                    <div style={{fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                                      <span className={playingAudio === sMusic.previewUrl ? 'music-icon-spin' : ''}>🎵</span>
+                                      <div className="marquee" style={{maxWidth: '120px'}}><span>{sMusic.title} - {sMusic.artist}</span></div>
+                                    </div>
+                                    {playingAudio === sMusic.previewUrl && <div style={{fontSize:'0.6rem', color:'#ff1493', marginTop:'2px', textAlign:'center'}}>Đang phát...</div>}
+                                  </div>
+                                )}
                               </div>
-                            )}
+                            ) : null}
+                            <div className="fb-avatar" style={{ backgroundColor: sColor }}>{photo.sender.charAt(0).toUpperCase()}</div>
                           </div>
-                        ) : null}
-                        <div className="fb-avatar" style={{ backgroundColor: sColor }}>{photo.sender.charAt(0).toUpperCase()}</div>
+                        <div className="fb-meta">
+                          <span className="fb-sender" style={{ color: sColor }}>{photo.sender}</span>
+                          <span className="fb-time">Just now</span>
+                        </div>
+                        {photo.sender === userName && (
+                          <div className="kebab-dropdown">
+                            <button className="kebab-btn">•••</button>
+                            <div className="kebab-menu">
+                              <button className="kebab-item" onClick={() => handleDeletePhoto(photo)}>Gỡ bài</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    <div className="fb-meta">
-                      <span className="fb-sender" style={{ color: sColor }}>{photo.sender}</span>
-                      <span className="fb-time">Just now</span>
-                    </div>
-                    {photo.sender === userName && (
-                      <div className="kebab-dropdown">
-                        <button className="kebab-btn">•••</button>
-                        <div className="kebab-menu">
-                          <button className="kebab-item" onClick={() => handleDeletePhoto(photo)}>Gỡ bài</button>
+                      
+                      {photo.caption && <div className="fb-caption">{photo.caption}</div>}
+                      <div className="fb-image-container">
+                        <img src={photo.photoBase64} alt="Feed" style={{ filter: photo.filter || 'none' }} />
+                      </div>
+                      
+                      <div className="fb-reactions">
+                        <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '❤️')}>❤️</button>
+                        <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '😂')}>😂</button>
+                        <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '😮')}>😮</button>
+                        <div style={{marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                          {Object.entries(photo.reactions).map(([user, emoji]) => (
+                            <span key={user} title={user}>{emoji as string}</span>
+                          ))}
                         </div>
                       </div>
-                    )}
-                  </div>
-                  
-                  {photo.caption && <div className="fb-caption">{photo.caption}</div>}
-                  <div className="fb-image-container">
-                    <img src={photo.photoBase64} alt="Feed" style={{ filter: photo.filter || 'none' }} />
-                  </div>
-                  
-                  <div className="fb-reactions">
-                    <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '❤️')}>❤️</button>
-                    <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '😂')}>😂</button>
-                    <button className="fb-reaction-btn" onClick={() => handleAddReaction(photo.id, '😮')}>😮</button>
-                    <div style={{marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
-                      {Object.entries(photo.reactions).map(([user, emoji]) => (
-                        <span key={user} title={user}>{emoji}</span>
-                      ))}
                     </div>
-                  </div>
+                  );
+                });
+              })()}
                 </div>
-              );
-            });
-          })()}
-            </div>
+              </>
+            )}
           </div>
 
           {/* SCREEN 4: CLUB EVENTS */}
