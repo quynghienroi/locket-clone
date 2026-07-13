@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { MoreHorizontal } from 'lucide-react';
 import '../Landscape.css';
 
-export const LandscapeFeed = ({ feed, themeColor }: { feed: any[], userName: string | null, themeColor: string, onReaction: any, onDelete: any }) => {
+export const LandscapeFeed = ({ feed, userName, themeColor, onReaction, onDelete }: { feed: any[], userName: string | null, themeColor: string, onReaction: any, onDelete: any }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [showKebab, setShowKebab] = useState(false);
   
   const handleWheel = (e: React.WheelEvent) => {
     if (e.deltaY > 0) {
@@ -43,10 +45,57 @@ export const LandscapeFeed = ({ feed, themeColor }: { feed: any[], userName: str
         <div className="landscape-main-overlay">
            <div className="landscape-sender-info">
              <div className="landscape-avatar" style={{backgroundColor: themeColor}}>{currentPhoto.sender.charAt(0).toUpperCase()}</div>
-             <span className="landscape-sender-name">{currentPhoto.sender}</span>
+             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+               <span className="landscape-sender-name">{currentPhoto.sender}</span>
+               {currentPhoto.senderNote && <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)' }}>{currentPhoto.senderNote}</span>}
+               {currentPhoto.senderMusic && (
+                 <div style={{ fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '10px', marginTop: '4px' }}>
+                   <span>🎵</span>
+                   <span>{currentPhoto.senderMusic.title}</span>
+                 </div>
+               )}
+             </div>
            </div>
            {currentPhoto.caption && <div className="landscape-caption">{currentPhoto.caption}</div>}
         </div>
+
+        <div className="landscape-reactions" style={{ position: 'absolute', bottom: '30px', left: '40px', zIndex: 10, display: 'flex', gap: '10px' }}>
+          {['❤️', '🔥', '😂', '😢', '😮'].map(emoji => (
+            <button
+              key={emoji}
+              onClick={() => onReaction(currentPhoto.id, emoji)}
+              style={{ background: 'rgba(0,0,0,0.5)', border: 'none', fontSize: '1.5rem', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', transition: 'transform 0.2s' }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+
+        {userName === currentPhoto.sender && (
+          <div className="landscape-kebab" style={{ position: 'absolute', top: '30px', right: '40px', zIndex: 10 }}>
+            <button 
+              onClick={() => setShowKebab(!showKebab)} 
+              style={{ background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            >
+              <MoreHorizontal size={24} />
+            </button>
+            {showKebab && (
+              <div style={{ position: 'absolute', top: '50px', right: '0', background: 'white', borderRadius: '12px', padding: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', width: '120px' }}>
+                <button 
+                  onClick={() => {
+                    onDelete(currentPhoto);
+                    setShowKebab(false);
+                  }}
+                  style={{ width: '100%', padding: '8px', border: 'none', background: '#fee2e2', color: '#dc2626', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  Gỡ bài
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="landscape-rotary-dial">

@@ -404,6 +404,21 @@ app.get('/api/admin/clean-db', async (req, res) => {
   res.json({ success: true, message: 'Use Supabase dashboard for admin tasks.' });
 });
 
+app.get('/api/health', (req, res) => {
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL || 'Missing SUPABASE_URL';
+    const supabaseKey = process.env.SUPABASE_KEY ? 'Present' : 'Missing SUPABASE_KEY';
+    res.json({ 
+      status: 'ok', 
+      supabaseUrl, 
+      supabaseKey,
+      message: 'Backend is running.' 
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.toString() });
+  }
+});
+
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error("Authentication error"));
@@ -456,6 +471,7 @@ io.on('connection', async (socket) => {
         // We only fetch feed for sender inside broadcastFeed, but let's also emit directly to save time for others
       } catch (err) {
         console.error("Error saving photo:", err);
+        socket.emit('error_msg', "Error saving photo: " + (err.message || err));
       }
     });
 

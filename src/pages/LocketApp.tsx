@@ -97,6 +97,9 @@ export default function LocketApp() {
   // New features
   const [themeColor, setThemeColor] = useState('#2563eb');
   const [statusNote, setStatusNote] = useState('');
+  const [statusMusic, setStatusMusic] = useState<any>(null);
+  const [musicQuery, setMusicQuery] = useState('');
+  const [musicResults, setMusicResults] = useState<any[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [cameraFilter, setCameraFilter] = useState('none');
   const [showMessengerChat, setShowMessengerChat] = useState(false);
@@ -313,6 +316,10 @@ export default function LocketApp() {
         auth: { token }
       });
       setSocket(newSocket);
+
+      newSocket.on('error_msg', (msg: string) => {
+        alert("System Error: " + msg);
+      });
 
       newSocket.on('feed_updated', (updatedFeed: PhotoData[]) => {
         setFeed(updatedFeed);
@@ -587,7 +594,7 @@ export default function LocketApp() {
       const res = await fetch(`${BACKEND_URL}/api/user/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ themeColor, statusNote })
+        body: JSON.stringify({ themeColor, statusNote, statusMusic })
       });
       const data = await res.json();
       if (data.success) {
@@ -595,6 +602,21 @@ export default function LocketApp() {
       }
     } catch (err) {
       alert("Error saving settings");
+    }
+  };
+
+  const searchMusic = async (q: string) => {
+    setMusicQuery(q);
+    if (q.length < 3) {
+      setMusicResults([]);
+      return;
+    }
+    try {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=5`);
+      const data = await res.json();
+      setMusicResults(data.results || []);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -1155,6 +1177,53 @@ export default function LocketApp() {
                     />
                   ))}
                 </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Status Music</label>
+                {statusMusic ? (
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#1f2937', padding:'10px', borderRadius:'8px' }}>
+                    <div style={{ display:'flex', flexDirection:'column' }}>
+                      <span style={{ fontSize:'0.9rem', fontWeight:'bold' }}>{statusMusic.title}</span>
+                      <span style={{ fontSize:'0.75rem', color:'#9ca3af' }}>{statusMusic.artist}</span>
+                    </div>
+                    <button type="button" onClick={() => setStatusMusic(null)} style={{ background:'transparent', border:'none', color:'#dc2626', cursor:'pointer' }}>Remove</button>
+                  </div>
+                ) : (
+                  <div>
+                    <input 
+                      type="text" 
+                      placeholder="Search song..." 
+                      className="name-input"
+                      value={musicQuery}
+                      onChange={(e) => searchMusic(e.target.value)}
+                      style={{ marginBottom: '0.5rem' }}
+                    />
+                    {musicResults.length > 0 && (
+                      <div style={{ background:'#1f2937', borderRadius:'8px', maxHeight:'150px', overflowY:'auto' }}>
+                        {musicResults.map((song: any) => (
+                          <div 
+                            key={song.trackId} 
+                            onClick={() => {
+                              setStatusMusic({
+                                title: song.trackName,
+                                artist: song.artistName,
+                                previewUrl: song.previewUrl,
+                                cover: song.artworkUrl100
+                              });
+                              setMusicQuery('');
+                              setMusicResults([]);
+                            }}
+                            style={{ padding:'10px', borderBottom:'1px solid #374151', cursor:'pointer', display:'flex', flexDirection:'column' }}
+                          >
+                            <span style={{ fontSize:'0.9rem' }}>{song.trackName}</span>
+                            <span style={{ fontSize:'0.75rem', color:'#9ca3af' }}>{song.artistName}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>

@@ -3,11 +3,17 @@
 @media (orientation: landscape) {
   /* Override main mobile frame for landscape */
   .mobile-frame {
-    max-width: 932px !important;
-    max-height: 430px !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
     flex-direction: row !important;
-    border-radius: 40px !important;
-    overflow: hidden;
+  }
+
+  /* Hide tab bar to save vertical space and enforce full screen */
+  .tab-bar {
+    display: none !important;
   }
 
   /* Camera UI in Landscape */
