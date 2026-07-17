@@ -76,7 +76,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
     <div className="overlay-full" style={{ background: '#0a0a0c', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', marginBottom: 40 }}>
         <h1 style={{ fontSize: '48px', fontWeight: '900', background: 'linear-gradient(to right, #00f2fe, #4facfe)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '10px' }}>
-          Locket
+          INNTECH
         </h1>
         <p style={{ color: '#a1a1aa' }}>Đăng nhập để chia sẻ khoảnh khắc</p>
       </div>

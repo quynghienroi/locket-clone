@@ -38,11 +38,11 @@ router.post('/request-otp', async (req, res) => {
 
   try {
     await transporter.sendMail({
-      from: `"Locket Web" <${process.env.GMAIL_USER}>`,
+      from: `"INNTECH Web" <${process.env.GMAIL_USER}>`,
       to: email,
-      subject: "Your Locket Verification Code",
-      text: `Your Locket verification code is: ${otp}. It expires in 5 minutes.`,
-      html: `<h2>Welcome to Locket</h2><p>Your verification code is: <strong>${otp}</strong></p>`
+      subject: "Your INNTECH Verification Code",
+      text: `Your INNTECH verification code is: ${otp}. It expires in 5 minutes.`,
+      html: `<h2>Welcome to INNTECH</h2><p>Your verification code is: <strong>${otp}</strong></p>`
     });
     res.json({ success: true, message: 'OTP sent to email' });
   } catch (error) {
