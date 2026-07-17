@@ -30,9 +30,13 @@ function App() {
     setLoading(true);
     setMessage('');
     try {
+      const token = localStorage.getItem('locket_token');
       const res = await fetch(`${BACKEND_URL}/api/events`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(eventForm)
       });
       const data = await res.json();

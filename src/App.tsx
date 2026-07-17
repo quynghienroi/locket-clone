@@ -1,13 +1,12 @@
-
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import LocketApp from './pages/LocketApp';
+import { MainApp } from './pages/MainApp';
 import Admin from './pages/Admin';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LocketApp />} />
+        <Route path="/" element={<MainApp />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
