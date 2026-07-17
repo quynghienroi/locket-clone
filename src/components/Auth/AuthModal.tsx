@@ -74,7 +74,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
 
   return (
     <div className="overlay-full" style={{ background: '#0a0a0c', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center', marginBottom: 40 }}>
+      <div style={{ textAlign: 'center', marginBottom: 40, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <img src="/logo.png" alt="INNTECH Logo" style={{ width: '120px', height: '120px', borderRadius: '50%', marginBottom: '1rem', objectFit: 'cover', border: '3px solid #00f2fe', boxShadow: '0 0 20px rgba(0, 242, 254, 0.5)' }} />
         <h1 style={{ fontSize: '48px', fontWeight: '900', background: 'linear-gradient(to right, #00f2fe, #4facfe)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '10px' }}>
           INNTECH
         </h1>
