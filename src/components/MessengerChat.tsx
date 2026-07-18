@@ -3,7 +3,7 @@ import { X, Send, Users, User } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import './NoteChat.css'; // Reuse glassmorphism styles
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
 interface Message {
   id: string;
@@ -13,10 +13,10 @@ interface Message {
   created_at: string;
 }
 
-export const MessengerChat = ({ isOpen, onClose, token, currentUser }: { isOpen: boolean, onClose: () => void, token: string, currentUser: string }) => {
+export const MessengerChat = ({ isOpen, onClose, token, currentUser, initialReceiver = 'global' }: { isOpen: boolean, onClose: () => void, token: string, currentUser: string, initialReceiver?: string }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [activeChat, setActiveChat] = useState<string>('global'); // 'global' or username
+  const [activeChat, setActiveChat] = useState<string>(initialReceiver);
   const [friends, setFriends] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -54,6 +54,10 @@ export const MessengerChat = ({ isOpen, onClose, token, currentUser }: { isOpen:
       newSocket.disconnect();
     };
   }, [token, currentUser, activeChat]);
+
+  useEffect(() => {
+    setActiveChat(initialReceiver);
+  }, [initialReceiver, isOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

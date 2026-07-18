@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
 import { useToast } from '../components/Shared/Toast';
 
 export const useAuth = () => {
@@ -7,6 +6,7 @@ export const useAuth = () => {
   const [username, setUsername] = useState(localStorage.getItem('locket_username'));
   const [themeColor, setThemeColor] = useState(localStorage.getItem('locket_themecolor') || '#000000');
   const [statusNote, setStatusNote] = useState('');
+  const [points, setPoints] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   
   const { showToast } = useToast();
@@ -21,6 +21,7 @@ export const useAuth = () => {
         if (data.success) {
           if (data.themeColor) setThemeColor(data.themeColor);
           if (data.statusNote) setStatusNote(data.statusNote);
+          if (data.points !== undefined) setPoints(data.points);
         } else {
           // Token invalid or expired
           logout();
@@ -77,5 +78,5 @@ export const useAuth = () => {
     }
   };
 
-  return { token, username, themeColor, statusNote, isLoading, login, logout, updateSettings };
+  return { token, username, themeColor, statusNote, points, setPoints, isLoading, login, logout, updateSettings };
 };

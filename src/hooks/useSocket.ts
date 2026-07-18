@@ -18,7 +18,6 @@ export const useSocket = (token: string | null) => {
     if (!socketRef.current) {
       const socket = io(import.meta.env.VITE_BACKEND_URL, {
         auth: { token },
-        transports: ['websocket', 'polling'],
       });
 
       socket.on('connect', () => setIsConnected(true));

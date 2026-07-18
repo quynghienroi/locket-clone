@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Folder, ArrowLeft, Star, Code } from 'lucide-react';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
 export function RichMediaEmbed({ repo }: { repo: any }) {
   const url = repo.url || repo.formLink || repo;
@@ -123,9 +123,9 @@ function GitHubRepoViewer({ owner, repoName }: { owner: string, repoName: string
       } else if (data.type === 'file') {
         // It's a file
         if (data.encoding === 'base64') {
-          // Decode base64
-          // UTF-8 base64 decoding correctly
-          const decoded = decodeURIComponent(escape(window.atob(data.content)));
+          // Decode base64 and handle newlines/whitespaces safely
+          const cleanBase64 = data.content.replace(/\s+/g, '');
+          const decoded = decodeURIComponent(escape(window.atob(cleanBase64)));
           setFileContent(decoded);
         } else {
           setFileContent('File cannot be displayed.');

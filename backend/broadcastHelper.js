@@ -1,10 +1,10 @@
+const Photo = require('./models/Photo');
+const User = require('./models/User');
+
 const broadcastFeed = async (supabase, io) => {
   try {
-    const { data: latestPhotos, error: photoError } = await supabase.from('photos').select('*').order('created_at', { ascending: false }).limit(50);
-    if (photoError) throw photoError;
-
-    const { data: allUsers, error: userError } = await supabase.from('users').select('username, statusnote, themecolor, statusmusic');
-    if (userError) throw userError;
+    const latestPhotos = await Photo.find().sort({ createdAt: -1 }).limit(50);
+    const allUsers = await User.find().select('username statusnote themecolor statusmusic');
 
     const userMap = {};
     if (allUsers) {
@@ -18,17 +18,17 @@ const broadcastFeed = async (supabase, io) => {
     }
     
     const globalFeed = (latestPhotos || []).map(p => {
-      let reactionsObj = p.reactions || {};
+      let reactionsObj = p.reactions ? Object.fromEntries(p.reactions) : {};
       
       return {
-        id: p.id,
+        id: p._id,
         sender: p.sender,
         targets: p.targets || [],
-        photoBase64: p.photo_url, // Maps to the new storage URL
+        photoBase64: p.photoUrl, // Send as photoBase64 to maintain compatibility with frontend
         caption: p.caption || '',
         filter: p.filter || 'none',
         reactions: reactionsObj,
-        timestamp: p.created_at,
+        timestamp: p.createdAt,
         senderNote: userMap[p.sender]?.note || '',
         senderColor: userMap[p.sender]?.color || '#fbbf24', 
         senderMusic: userMap[p.sender]?.music || null

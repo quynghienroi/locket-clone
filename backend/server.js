@@ -2,12 +2,14 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const eventRoutes = require('./routes/events');
 const repoRoutes = require('./routes/repos');
+const uploadRoutes = require('./routes/upload');
 const setupSockets = require('./sockets');
 
 const app = express();
@@ -16,11 +18,19 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// Connect to MongoDB
+if (process.env.MONGODB_URI) {
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('✅ MongoDB Connected'))
+    .catch(err => console.error('❌ MongoDB Connection Error:', err));
+}
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/repos', repoRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -29,7 +39,7 @@ app.get('/api/health', (req, res) => {
 
 // Admin endpoint (placeholder)
 app.get('/api/admin/clean-db', (req, res) => {
-  res.json({ success: true, message: 'Use Supabase dashboard for admin tasks.' });
+  res.json({ success: true, message: 'Use MongoDB dashboard for admin tasks.' });
 });
 
 // GitHub Proxy
@@ -57,14 +67,15 @@ const io = new Server(server, {
     origin: "*",
     methods: ["GET", "POST"]
   },
-  // maxHttpBufferSize reduced since photos are no longer base64 (just URLs)
-  maxHttpBufferSize: 1e6 // 1MB is enough for any chat message or URL
+  // We can leave this large enough for base64 if needed, but we will use cloudinary REST endpoint anyway.
+  maxHttpBufferSize: 1e6 
 });
 
 app.set('io', io);
 setupSockets(io);
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, '192.168.1.11', () => {
+// Listen on all interfaces for Render
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`INNTECH Backend listening on port ${PORT}`);
 });

@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const supabase = require('../utils/supabase');
+const User = require('../models/User');
 const authMiddleware = require('../middlewares/authMiddleware');
 const broadcastFeed = require('../broadcastHelper');
 
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const { data: user, error } = await supabase.from('users').select('*').eq('email', req.user.email).maybeSingle();
-    if (error || !user) return res.status(404).json({ error: 'User not found' });
-    res.json({ success: true, points: 0, themeColor: user.themecolor, statusNote: user.statusnote });
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ success: true, points: user.points, themeColor: user.themecolor, statusNote: user.statusnote });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -17,12 +17,13 @@ router.get('/me', authMiddleware, async (req, res) => {
 router.put('/settings', authMiddleware, async (req, res) => {
   const { themeColor, statusNote } = req.body;
   try {
-    const { data: user, error } = await supabase.from('users').update({
-      themecolor: themeColor,
-      statusnote: statusNote
-    }).eq('email', req.user.email).select().single();
+    const user = await User.findOneAndUpdate(
+      { email: req.user.email },
+      { themecolor: themeColor, statusnote: statusNote },
+      { new: true }
+    );
     
-    if (error || !user) return res.status(404).json({ error: 'User not found' });
+    if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ success: true, themeColor: user.themecolor, statusNote: user.statusnote });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update settings' });
@@ -32,8 +33,8 @@ router.put('/settings', authMiddleware, async (req, res) => {
 router.post('/note', authMiddleware, async (req, res) => {
   const { statusNote, statusMusic } = req.body;
   try {
-    const { data: user, error } = await supabase.from('users').select('*').eq('email', req.user.email).single();
-    if (error || !user) return res.status(404).json({ error: 'User not found' });
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) return res.status(404).json({ error: 'User not found' });
     
     let history = user.notehistory || [];
     if (statusNote || statusMusic) {
@@ -45,20 +46,18 @@ router.post('/note', authMiddleware, async (req, res) => {
       });
     }
     
-    const { data: updatedUser, error: updateError } = await supabase.from('users').update({
-      statusnote: statusNote || '',
-      statusmusic: statusMusic || {},
-      notehistory: history
-    }).eq('email', req.user.email).select().single();
-
-    if (updateError) throw updateError;
+    user.statusnote = statusNote || '';
+    user.statusmusic = statusMusic || {};
+    user.notehistory = history;
+    await user.save();
     
     const io = req.app.get('io');
     if (io) {
-      await broadcastFeed(supabase, io);
+      // Pass null for supabase, broadcastFeed should be updated to not rely on it
+      await broadcastFeed(null, io); 
     }
     
-    res.json({ success: true, statusNote: updatedUser.statusnote, statusMusic: updatedUser.statusmusic, noteHistory: updatedUser.notehistory });
+    res.json({ success: true, statusNote: user.statusnote, statusMusic: user.statusmusic, noteHistory: user.notehistory });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to add note' });
@@ -67,8 +66,8 @@ router.post('/note', authMiddleware, async (req, res) => {
 
 router.get('/notes', authMiddleware, async (req, res) => {
   try {
-    const { data: user, error } = await supabase.from('users').select('notehistory').eq('email', req.user.email).single();
-    if (error || !user) return res.status(404).json({ error: 'User not found' });
+    const user = await User.findOne({ email: req.user.email }).select('notehistory');
+    if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ success: true, noteHistory: user.notehistory || [] });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch notes' });
@@ -77,8 +76,8 @@ router.get('/notes', authMiddleware, async (req, res) => {
 
 router.delete('/note/:id', authMiddleware, async (req, res) => {
   try {
-    const { data: user, error } = await supabase.from('users').select('*').eq('email', req.user.email).single();
-    if (error || !user) return res.status(404).json({ error: 'User not found' });
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) return res.status(404).json({ error: 'User not found' });
     
     let history = user.notehistory || [];
     history = history.filter(n => n.id !== req.params.id && n._id !== req.params.id);
@@ -91,18 +90,17 @@ router.delete('/note/:id', authMiddleware, async (req, res) => {
       newStatusMusic = latest.music || {};
     }
     
-    const { data: updatedUser } = await supabase.from('users').update({
-      notehistory: history,
-      statusnote: newStatusNote,
-      statusmusic: newStatusMusic
-    }).eq('email', req.user.email).select().single();
+    user.notehistory = history;
+    user.statusnote = newStatusNote;
+    user.statusmusic = newStatusMusic;
+    await user.save();
     
     const io = req.app.get('io');
     if (io) {
-      await broadcastFeed(supabase, io);
+      await broadcastFeed(null, io);
     }
     
-    res.json({ success: true, statusNote: updatedUser.statusnote, statusMusic: updatedUser.statusmusic, noteHistory: updatedUser.notehistory });
+    res.json({ success: true, statusNote: user.statusnote, statusMusic: user.statusmusic, noteHistory: user.notehistory });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete note' });
   }

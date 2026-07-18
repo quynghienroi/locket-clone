@@ -23,7 +23,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();

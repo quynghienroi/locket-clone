@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Send, Music, Search } from 'lucide-react';
 import './NoteChat.css';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
 export const NoteChat = ({ isOpen, onClose, token }: { isOpen: boolean, onClose: () => void, token: string }) => {
   const [messages, setMessages] = useState<any[]>([]);

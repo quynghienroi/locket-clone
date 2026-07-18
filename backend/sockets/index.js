@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
-const supabase = require('../utils/supabase');
+const User = require('../models/User');
+const Photo = require('../models/Photo');
+const Message = require('../models/Message');
 const broadcastFeed = require('../broadcastHelper');
 require('dotenv').config();
 
@@ -18,32 +20,31 @@ const setupSockets = (io) => {
 
   io.on('connection', async (socket) => {
     try {
-      const { data: user } = await supabase.from('users').select('username').eq('email', socket.userEmail).maybeSingle();
+      const user = await User.findOne({ email: socket.userEmail }).select('username');
       const username = user ? user.username : 'Unknown';
       console.log(`A user connected: ${username}`);
 
       if (username !== 'Unknown') {
         socket.join(username);
-        await broadcastFeed(supabase, io);
+        await broadcastFeed(null, io);
       }
 
       socket.on('send_photo', async (data) => {
-        // Now photoUrl is sent directly from the client, preventing Base64 overload on the server
         const { targets, photoUrl, caption, filter } = data;
         try {
           if (!photoUrl) throw new Error("Photo URL is required");
 
-          const { data: newPhotoDoc, error: insertError } = await supabase.from('photos').insert([{
+          const newPhotoDoc = new Photo({
             sender: username,
             targets: targets || [],
-            photo_url: photoUrl,
+            photoUrl: photoUrl,
             caption: caption || '',
             filter: filter || 'none',
             reactions: {}
-          }]).select().single();
-          if (insertError) throw insertError;
+          });
+          await newPhotoDoc.save();
 
-          await broadcastFeed(supabase, io);
+          await broadcastFeed(null, io);
         } catch (err) {
           console.error("Error saving photo:", err);
           socket.emit('error_msg', "Error saving photo: " + (err.message || err));
@@ -52,10 +53,10 @@ const setupSockets = (io) => {
 
       socket.on('delete_photo', async (photoId) => {
         try {
-          const { data: photo } = await supabase.from('photos').select('*').eq('id', photoId).single();
+          const photo = await Photo.findById(photoId);
           if (photo && (photo.sender === username || username === 'admin')) {
-            await supabase.from('photos').delete().eq('id', photoId);
-            await broadcastFeed(supabase, io);
+            await Photo.findByIdAndDelete(photoId);
+            await broadcastFeed(null, io);
           }
         } catch (err) {
           console.error("Error deleting photo:", err);
@@ -65,12 +66,12 @@ const setupSockets = (io) => {
       socket.on('add_reaction', async (data) => {
         const { photoId, emoji } = data;
         try {
-          const { data: photo } = await supabase.from('photos').select('*').eq('id', photoId).single();
+          const photo = await Photo.findById(photoId);
           if (photo) {
-            const reactions = photo.reactions || {};
-            reactions[username] = emoji;
-            await supabase.from('photos').update({ reactions }).eq('id', photoId);
-            await broadcastFeed(supabase, io);
+            if (!photo.reactions) photo.reactions = new Map();
+            photo.reactions.set(username, emoji);
+            await photo.save();
+            await broadcastFeed(null, io);
           }
         } catch (err) {
           console.error("add_reaction error:", err);
@@ -79,17 +80,28 @@ const setupSockets = (io) => {
 
       socket.on('join_chat', async (receiver) => {
         try {
-          let query = supabase.from('messages').select('*').order('created_at', { ascending: true });
-          
+          let history;
           if (receiver === 'global') {
-            query = query.eq('receiver', 'global');
+            history = await Message.find({ receiver: 'global' }).sort({ createdAt: 1 });
           } else {
-            query = query.or(`and(sender.eq.${username},receiver.eq.${receiver}),and(sender.eq.${receiver},receiver.eq.${username})`);
+            history = await Message.find({
+              $or: [
+                { sender: username, receiver: receiver },
+                { sender: receiver, receiver: username }
+              ]
+            }).sort({ createdAt: 1 });
           }
           
-          const { data: history } = await query;
           if (history) {
-            socket.emit('chat_history', history);
+            // Map MongoDB _id and createdAt to frontend expected format
+            const formattedHistory = history.map(msg => ({
+              id: msg._id,
+              sender: msg.sender,
+              receiver: msg.receiver,
+              text: msg.text,
+              created_at: msg.createdAt
+            }));
+            socket.emit('chat_history', formattedHistory);
           }
           socket.join(receiver === 'global' ? 'chat_global' : [username, receiver].sort().join('_'));
         } catch (err) {
@@ -101,18 +113,25 @@ const setupSockets = (io) => {
         try {
           const { receiver, text } = data;
           
-          // Basic validation
           if (!text || text.trim() === '') return;
 
-          const { data: newMsg, error } = await supabase.from('messages').insert([{
+          const newMsg = new Message({
             sender: username,
             receiver,
             text
-          }]).select().single();
+          });
+          await newMsg.save();
           
-          if (!error && newMsg) {
+          if (newMsg) {
+            const formattedMsg = {
+              id: newMsg._id,
+              sender: newMsg.sender,
+              receiver: newMsg.receiver,
+              text: newMsg.text,
+              created_at: newMsg.createdAt
+            };
             const roomName = receiver === 'global' ? 'chat_global' : [username, receiver].sort().join('_');
-            io.to(roomName).emit('chat_message', newMsg);
+            io.to(roomName).emit('chat_message', formattedMsg);
           }
         } catch (err) {
           console.error("send_chat_message error:", err);
